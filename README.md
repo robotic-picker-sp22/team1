@@ -1,9 +1,5 @@
-# CSE 481C
-Starter code and samples for CSE 481C at the University of Washington, Winter 2019.
+# Fetch Picker
+
+This repositiory involves Ssarter code and samples for two classes at the University of Washington, Spring 2022, that aim to program the Fetch mobile manipulator to pick requested items from densely packed shelves.
 
 Labs and other documentation are on the **[wiki](https://github.com/cse481wi19/cse481wi19/wiki)**.
-
-## Kuri Development Note
-
-Continued development of Kuri software has moved to a [separate repository](https://github.com/hcrlab/kuri).
-Please check there for up-to-date code and usage information.
