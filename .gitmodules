@@ -1,0 +1,6 @@
+[submodule "fetch_gazebo"]
+	path = fetch_gazebo
+	url = https://github.com/fetchrobotics/fetch_gazebo.git
+[submodule "simple_grasping"]
+	path = simple_grasping
+	url = https://github.com/mikeferguson/simple_grasping.git
