@@ -2,7 +2,7 @@
 
 If you are dual-booting or using a virtual machine, this describes how to set up your computer identically to how the course computers are set up.
 
-- First, make sure you install Ubuntu 14.04.
+- First, make sure you install Ubuntu 20.04.
   Other versions of Ubuntu will not work.
 - `source` the lab machine tools at the end of `~/.bashrc` with this line: `source ~/catkin_ws/src/cse481wi19/course_setup/labmachine.bash`
 - If you are on a laptop, then most likely you will need to edit the course tools.
@@ -15,5 +15,5 @@ If you are dual-booting or using a virtual machine, this describes how to set up
   ./install_cse481c.bash
   ```
 
-The process should take about 20 minutes.
+The process should take about 10-15 minutes.
 If this doesn't work, let the course staff know.
