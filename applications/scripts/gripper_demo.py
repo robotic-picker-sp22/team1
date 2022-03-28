@@ -5,8 +5,8 @@ import rospy
 
 
 def print_usage():
-    print 'Usage: rosrun applications gripper_demo.py open'
-    print '       rosrun applications gripper_demo.py close 40'
+    print('Usage: rosrun applications gripper_demo.py open')
+    print('       rosrun applications gripper_demo.py close 40')
 
 
 def wait_for_time():
@@ -31,9 +31,9 @@ def main():
         effort = float(argv[2])
 
     if command == 'open':
-        rospy.logerr('Not implemented.')
+        gripper.open()
     elif command == 'close':
-        rospy.logerr('Not implemented.')
+        gripper.close(effort)
     else:
         print_usage()
 
