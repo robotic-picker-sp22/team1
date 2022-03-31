@@ -4,7 +4,10 @@ If you are dual-booting or using a virtual machine, this describes how to set up
 
 - First, make sure you install Ubuntu 20.04.
   Other versions of Ubuntu will not work.
-- `source` the lab machine tools at the end of `~/.bashrc` with this line: `source ~/catkin_ws/src/cse481wi19/course_setup/labmachine.bash`
+- Create a directory called `catkin_ws`. In the `catkin_ws` directory create another directory called `src`
+- In the `src` directory clone the `fetch-picker` repository.
+- Run `catkin build` to build the workspace
+- `source` the lab machine tools at the end of `~/.bashrc` with this line: `source ~/catkin_ws/src/fetch-picker/course_setup/labmachine.bash`
 - If you are on a laptop, then most likely you will need to edit the course tools.
   Find the function `my_ip` and change `eth0` to `wlan0`.
   Typing `source ~/.bashrc; my_ip` into the terminal should show your IP address.
