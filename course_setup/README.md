@@ -12,6 +12,7 @@ If you are dual-booting or using a virtual machine, this describes how to set up
   chmod +x install_cse481c.bash
   ./install_cse481c.bash
   ```
+- Run `cd ~/catkin-ws/` followed by `catkin_init_workspace` 
 - Run `catkin build` to build the workspace
 - `source` the lab machine tools at the end of `~/.bashrc` with this line: `source ~/catkin_ws/src/fetch-picker/course_setup/labmachine.bash`
 - If you are on a laptop, then most likely you will need to edit the course tools.
