@@ -34,13 +34,15 @@ class Base(object):
         # TODO: Create Twist msg
         # TODO: Fill out msg
         # TODO: Publish msg
-        msg = Twist(linear=Vector3(linear_speed, 0, 0), angular=angular_speed)
-        self.pub.publish(msg)
+        vel = Twist()
+        vel.linear.x = linear_speed
+        vel.angular.z = angular_speed
+        self.pub.publish(vel)
 
     def stop(self):
         """Stops the mobile base from moving.
         """
         # TODO: Publish 0 velocity
-        msg = Twist(0, 0)
+        msg = Twist()
         rospy.loginfo("stop")
         self.pub.publish(msg)
