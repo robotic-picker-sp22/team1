@@ -8,7 +8,7 @@ class Base(object):
     """Base controls the mobile base portion of the Fetch robot.
 
     Sample usage:
-        base = fetch_api.Base()
+        base = robot_api.Base()
         while CONDITION:
             base.move(0.2, 0)
         base.stop()

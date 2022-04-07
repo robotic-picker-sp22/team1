@@ -20,6 +20,7 @@ class Gripper(object):
     def __init__(self):
         # TODO: Create actionlib client
         # TODO: Wait for server
+        pass
 
     def open(self):
         """Opens the gripper.
@@ -27,6 +28,7 @@ class Gripper(object):
         # TODO: Create goal
         # TODO: Send goal
         # TODO: Wait for result
+        pass
 
     def close(self, max_effort=MAX_EFFORT):
         """Closes the gripper.
@@ -38,3 +40,4 @@ class Gripper(object):
         # TODO: Create goal
         # TODO: Send goal
         # TODO: Wait for result
+        pass
