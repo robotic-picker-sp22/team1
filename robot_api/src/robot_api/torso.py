@@ -5,7 +5,7 @@
 # TODO: import ??????????_msgs.msg
 import rospy
 
-# TODO: ACTION_NAME = ???
+ACTION_NAME = "/torso_controller/follow_joint_trajectory"
 # TODO: JOINT_NAME = ???
 TIME_FROM_START = 5  # How many seconds it should take to set the torso height.
 

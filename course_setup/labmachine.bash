@@ -3,7 +3,7 @@ source /opt/ros/noetic/setup.bash
 
 # If you're on a laptop, change eth0 to wlan0
 function my_ip() {
-    MY_IP=$(/sbin/ifconfig eth0 | awk '/inet/ { print $2 } ' | sed -e s/addr://)
+    MY_IP=$(/sbin/ifconfig ens33 | awk '/inet/ { print $2 } ' | sed -e s/addr://)
     echo ${MY_IP:-"Not connected"}
 }
 
