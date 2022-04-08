@@ -1,0 +1,60 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../bower_components/ros-websocket/ros-websocket.html">
+
+
+<dom-module id="web-teleop-app">
+
+  <ros-websocket auto ros="{{ros}}"
+  url="{{url}}"
+  on-connection="_handleConnection"
+  on-close="_handleClose"
+  on-error="_handleError">
+  </ros-websocket>
+
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <h1>Fetch teleop</h1>
+    [[status]]
+
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class WebTeleopApp extends Polymer.Element {
+      static get is() { return 'web-teleop-app'; }
+      static get properties() {
+        return {
+          prop1: {
+            type: String,
+            value: 'web-teleop-app'
+          }
+        };
+      }
+      static get properties() {
+        return {};
+      }
+
+      _handleConnection() {
+        this.status = 'Connected to the websocket server.';
+        console.log(this.status);
+      }
+      _handleClose() {
+        this.status = 'Closed connection to the websocket server.';
+        console.log(this.status);
+      }
+      _handleError() {
+        this.status = 'Error connecting to the websocket server.';
+        console.log(this.status);
+      }
+    }
+
+    window.customElements.define(WebTeleopApp.is, WebTeleopApp);
+  </script>
+</dom-module>
