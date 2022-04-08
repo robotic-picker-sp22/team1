@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# TODO: import ?????????
-# TODO: import ???????_msgs.msg
-# TODO: import ??????????_msgs.msg
 import rospy
 import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
@@ -35,7 +32,6 @@ class Torso(object):
             height: The height, in meters, to set the torso to. Values range
                 from Torso.MIN_HEIGHT (0.0) to Torso.MAX_HEIGHT(0.4).
         """
-        # TODO: Check that the height is between MIN_HEIGHT and MAX_HEIGHT.
         height = max(self.__class__.MIN_HEIGHT, min(height, self.__class__.MAX_HEIGHT))
 
         goal = FollowJointTrajectoryGoal()
