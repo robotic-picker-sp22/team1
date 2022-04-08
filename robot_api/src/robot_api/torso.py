@@ -6,7 +6,7 @@
 import rospy
 import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from trajectory_msgs.msg import JointTrajectoryPoint
 
 ACTION_NAME = "/torso_controller/follow_joint_trajectory"
 JOINT_NAME = "torso_lift_joint"
