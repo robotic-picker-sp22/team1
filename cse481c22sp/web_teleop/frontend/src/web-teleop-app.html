@@ -1,24 +1,55 @@
 <link rel="import" href="../bower_components/polymer/polymer-element.html">
+
 <link rel="import" href="../bower_components/ros-websocket/ros-websocket.html">
+<link rel="import" href="../bower_components/ros-topic/ros-topic.html">
+<link rel="import" href="../bower_components/ros-service/ros-service.html">
+
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-slider/paper-slider.html">
 
 
 <dom-module id="web-teleop-app">
-
-  <ros-websocket auto ros="{{ros}}"
-  url="{{url}}"
-  on-connection="_handleConnection"
-  on-close="_handleClose"
-  on-error="_handleError">
-  </ros-websocket>
-
   <template>
+    <style is="custom-style" include="iron-flex"></style>
     <style>
       :host {
         display: block;
       }
+      paper-slider {
+        --paper-slider-input: {
+          width: 100px;
+        }
+      }
+      paper-button {
+        background-color: #eee;
+      }
     </style>
+
+    <ros-websocket auto ros="{{ros}}"
+    url="{{url}}"
+    on-connection="_handleConnection"
+    on-close="_handleClose"
+    on-error="_handleError">
+    </ros-websocket>
+
+    <ros-topic auto
+    ros="{{ros}}"
+    topic="joint_state_republisher/torso_lift_joint"
+    msg-type="std_msgs/Float64"
+    last-message="{{torsoHeight}}"
+    on-message="_handleTorsoHeight"
+    ></ros-topic>
     <h1>Fetch teleop</h1>
-    [[status]]
+    <div>Status: [[status]]</div>
+    <div>
+      Torso height: [[_round(torsoHeight.data, 0.001)]] meters
+    </div>
+    <div class="layout horizontal center">
+      <paper-slider min="0" max="0.4" step="0.01" editable
+        value="{{desiredTorsoHeight}}"></paper-slider>
+      <paper-button>Set torso</paper-button>
+    </div>
 
   </template>
 
@@ -53,7 +84,27 @@
         this.status = 'Error connecting to the websocket server.';
         console.log(this.status);
       }
+      _handleTorsoHeight(evt) {
+        var msg = evt.detail;
+
+        // This log completely overtakes the log in the console.
+        // It's a good example of event callback tho.
+        // console.log(msg);
+      }
+
+      // Rounds val to a given precision, where the precision is given as the
+      // step size between numbers in the output range.
+      // E.g., _round(0.053, 0.1) = 0.1
+      // E.g., _round(0.053, 0.01) = 0.05
+      // E.g., _round(0.053, 0.001) = 0.053
+      _round(val, precision) {
+        return Math.round(val/precision) * precision;
+      }
     }
+
+    // var websocket = document.querySelector('ros-websocket');
+    // websocket.addEventListener('connection', WebTeleopApp._handleConnection);
+    // websocket.addEventListener('error', WebTeleopApp._handleError);
 
     window.customElements.define(WebTeleopApp.is, WebTeleopApp);
   </script>
