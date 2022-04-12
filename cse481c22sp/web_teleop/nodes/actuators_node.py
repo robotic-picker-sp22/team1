@@ -3,7 +3,7 @@
 import re
 import robot_api
 import rospy
-from web_teleop.srv import SetTorso, SetTorsoResponse
+from web_teleop.srv import SetJointValue, SetJointValueResponse
 
 
 def wait_for_time():
@@ -21,7 +21,7 @@ class ActuatorServer(object):
         self._gripper = robot_api.Gripper()
         self._arm_joints = robot_api.ArmJoints()
 
-    def handle_set_torso(self, request):
+    def handle_set_joint_value(self, request):
         if request.body_part == "torso":
             self._torso.set_height(request.value)
         elif request.body_part == "head":
@@ -46,15 +46,15 @@ class ActuatorServer(object):
                 self._gripper.open()
         else:
             rospy.logwarn(f"Unknown body part {request.body_part}")
-        return SetTorsoResponse()
+        return SetJointValueResponse()
 
 
 def main():
     rospy.init_node('web_teleop_actuators')
     wait_for_time()
     server = ActuatorServer()
-    torso_service = rospy.Service('web_teleop/set_torso', SetTorso,
-                                  server.handle_set_torso)
+    torso_service = rospy.Service('web_teleop/set_joint_value', SetJointValue,
+                                  server.handle_set_joint_value)
     rospy.spin()
 
 

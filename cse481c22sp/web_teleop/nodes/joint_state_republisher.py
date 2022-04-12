@@ -18,6 +18,7 @@ def main():
     rospy.sleep(0.5)
     reader = JointStateReader()
 
+    # Get the joint names from the server
     while True:
         joints = list(reader.latest_joint_states.keys())
         rospy.loginfo("Waiting for joints")
@@ -26,12 +27,14 @@ def main():
         rospy.sleep(0.5)
 
 
+    # Create a publisher for each joint
     pubs = {
         joint: rospy.Publisher(f"joint_state_republisher/{joint}", Float64, queue_size=10)
         for joint in joints
     }
     rospy.sleep(0.5)
 
+    # Publish the joint states @ 10Hz
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         for joint, pub in pubs.items():
