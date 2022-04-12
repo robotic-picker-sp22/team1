@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import math
+from typing import Optional
 
 import rospy
 import actionlib
@@ -52,6 +53,9 @@ class Head(object):
         self.look_at_client.wait_for_server()
         self.pan_tilt_client.wait_for_server()
 
+        self._last_pan = None
+        self._last_tilt = None
+
     def look_at(self, frame_id, x, y, z):
         """Moves the head to look at a point in space.
 
@@ -71,13 +75,23 @@ class Head(object):
         self.look_at_client.send_goal_and_wait(goal)
         return self.look_at_client.get_result()
 
-    def pan_tilt(self, pan, tilt):
+    def pan_tilt(self, pan: Optional[float] = None, tilt: Optional[float] = None):
         """Moves the head by setting pan/tilt angles.
 
               Args:
             pan: The pan angle, in radians. A positive value is clockwise.
             tilt: The tilt angle, in radians. A positive value is downwards.
         """
+        pan = pan if pan is not None else self._last_pan
+        tilt = tilt if tilt is not None else self._last_tilt
+
+        self._last_pan = pan
+        self._last_tilt = tilt
+
+        if pan is None or tilt is None:
+            rospy.logwarn("Pan or tilt is None.")
+            return
+
         goal = FollowJointTrajectoryGoal()
         goal.trajectory.joint_names = [PAN_JOINT, TILT_JOINT]
         goal.trajectory.points.append(JointTrajectoryPoint(
