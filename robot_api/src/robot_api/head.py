@@ -12,6 +12,7 @@ from control_msgs.msg import (
     PointHeadGoal,
 )
 from trajectory_msgs.msg import JointTrajectoryPoint
+from sensor_msgs.msg import JointState
 
 # Source: http://docs.fetchrobotics.com/api_overview.html#head-interface
 LOOK_AT_ACTION_NAME = 'head_controller/point_head'  # Get the name of the look-at action
@@ -53,8 +54,24 @@ class Head(object):
         self.look_at_client.wait_for_server()
         self.pan_tilt_client.wait_for_server()
 
+        # This publisher will only be called once (to get the current pan/tilt angles)
+        self.sub = rospy.Subscriber('/joint_states', JointState, self.joint_states_callback)
+
         self._last_pan = None
         self._last_tilt = None
+
+    def joint_states_callback(self, msg: JointState):
+        """Callback for the joint_states topic.
+
+        This is used to get the current pan/tilt angles.
+        """
+        if PAN_JOINT in msg.name:
+            self._last_pan = msg.position[msg.name.index(PAN_JOINT)]
+        if TILT_JOINT in msg.name:
+            self._last_tilt = msg.position[msg.name.index(TILT_JOINT)]
+
+        if self._last_pan is not None and self._last_tilt is not None:
+            self.sub.unregister()
 
     def look_at(self, frame_id, x, y, z):
         """Moves the head to look at a point in space.
