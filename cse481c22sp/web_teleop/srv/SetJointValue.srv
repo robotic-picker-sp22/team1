@@ -1,0 +1,4 @@
+float64 value  # Some value
+string body_part  # arm
+string joint  # shoulder_pan
+---

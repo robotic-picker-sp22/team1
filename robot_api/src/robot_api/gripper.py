@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 
-# TODO: import ?????????
-# TODO: import ???????_msgs.msg
 import rospy
 import control_msgs.msg
 import actionlib
@@ -18,8 +16,6 @@ class Gripper(object):
     MAX_EFFORT = 100  # Max grasp force, in Newtons
 
     def __init__(self):
-        # TODO: Create actionlib client
-        # TODO: Wait for server
         self.client = actionlib.SimpleActionClient(
             ACTION_NAME, control_msgs.msg.GripperCommandAction)
         self.client.wait_for_server()
@@ -28,9 +24,6 @@ class Gripper(object):
     def open(self):
         """Opens the gripper.
         """
-        # TODO: Create goal
-        # TODO: Send goal
-        # TODO: Wait for result
         goal = control_msgs.msg.GripperCommandGoal()
         goal.command.position = OPENED_POS
         self.client.send_goal(goal)
@@ -44,9 +37,6 @@ class Gripper(object):
             max_effort: The maximum effort, in Newtons, to use. Note that this
                 should not be less than 35N, or else the gripper may not close.
         """
-        # TODO: Create goal
-        # TODO: Send goal
-        # TODO: Wait for result
         max_effort = min(max_effort, Gripper.MAX_EFFORT)
         max_effort = max(max_effort, Gripper.MIN_EFFORT)
 

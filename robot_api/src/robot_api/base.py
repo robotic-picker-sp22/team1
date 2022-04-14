@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-# TODO: import ????????_msgs.msg
 from geometry_msgs.msg import Twist, Vector3
 import rospy
 
@@ -16,7 +15,6 @@ class Base(object):
     """
 
     def __init__(self):
-        # TODO: Create publisher
         self.pub = rospy.Publisher("cmd_vel", Twist, queue_size=10)
 
     def move(self, linear_speed, angular_speed):
@@ -31,9 +29,6 @@ class Base(object):
             angular_speed: The rotation speed, in radians/second. A positive
                 value means the robot should rotate clockwise.
         """
-        # TODO: Create Twist msg
-        # TODO: Fill out msg
-        # TODO: Publish msg
         vel = Twist()
         vel.linear.x = linear_speed
         vel.angular.z = angular_speed
@@ -42,7 +37,6 @@ class Base(object):
     def stop(self):
         """Stops the mobile base from moving.
         """
-        # TODO: Publish 0 velocity
         msg = Twist()
         rospy.loginfo("stop")
         self.pub.publish(msg)
