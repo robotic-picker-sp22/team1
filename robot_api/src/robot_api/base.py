@@ -49,6 +49,7 @@ class Base(object):
                 means forward, negative means backward.
             speed: The speed to travel, in meters/second.
         """
+        self.stop()
         while not self._latest_odom:
             pass
         start = copy.deepcopy(self._latest_odom)
@@ -73,14 +74,14 @@ class Base(object):
                 value rotates counter-clockwise.
             speed: The angular speed to rotate, in radians/second.
         """
+        self.stop()
         direction = -1 if angular_distance < 0 else 1
         angular_distance = abs(angular_distance) % (2 * math.pi)
         while not self._latest_odom:
             pass
         start = copy.deepcopy(self._latest_odom)
-        max_angle_travelled = 0
 
-        def angle_travelled():
+        def get_angle_travelled():
             current_angle = get_angle(self._latest_odom)
             start_angle = get_angle(start)
             # print(f"start angle: {start_angle}")
@@ -97,14 +98,21 @@ class Base(object):
                     return 2 * math.pi - current_angle + start_angle
 
         rate = rospy.Rate(10)
-        while (remaining_distance := angular_distance - angle_travelled()) > 0 and max_angle_travelled <= angle_travelled():
-            max_angle_travelled = angle_travelled()
-            # print(remaining_distance)
-            angular_speed = max(0.25, min(speed, remaining_distance))
+        angle_travelled = get_angle_travelled()
+        remaining_distance = angular_distance - angle_travelled
+        # to prevent overshoot over one cycle and the consequencing redundant rotations.
+        max_angle_travelled = 0
+        while remaining_distance > 0 and max_angle_travelled <= angle_travelled:
+            print(remaining_distance)
+            max_angle_travelled = max(angle_travelled, max_angle_travelled)
+            # angular_speed = max(0.25, min(speed, remaining_distance))
+            angular_speed = speed
             # print(f"angular speed: {angular_speed}")
             # print(f"direction: {direction}")
             self.move(0, direction * angular_speed)
             rate.sleep()
+            angle_travelled = get_angle_travelled()
+            remaining_distance = angular_distance - angle_travelled
         self.stop()
 
     def move(self, linear_speed, angular_speed):
