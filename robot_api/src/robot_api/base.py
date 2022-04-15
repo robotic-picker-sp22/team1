@@ -1,10 +1,8 @@
 #! /usr/bin/env python
 
 import copy
-from dis import dis
 import math
-from turtle import distance
-from geometry_msgs.msg import Twist, Quaternion
+from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import rospy
 import tf.transformations as tft
@@ -56,10 +54,15 @@ class Base(object):
         start = copy.deepcopy(self._latest_odom)
         rate = rospy.Rate(10)
         direction = -1 if distance < 0 else 1
-        while (remaining_distance := direction * (distance - (self._latest_odom.pose.pose.position.x - start.pose.pose.position.x))) > 0:
+        distance = abs(distance)
+        remaining_distance = distance
+        while remaining_distance > 0:
+            print(f"remaining distance: {remaining_distance}")
             linear_speed = max(0.05, min(speed, remaining_distance))
             self.move(direction * linear_speed, 0)
             rate.sleep()
+            remaining_distance = distance - math.sqrt((self._latest_odom.pose.pose.position.x - start.pose.pose.position.x)**2 +
+                                                      (self._latest_odom.pose.pose.position.y - start.pose.pose.position.y)**2)
 
     def turn(self, angular_distance, speed=0.5):
         """Rotates the robot a certain angle.
@@ -99,7 +102,7 @@ class Base(object):
             angular_speed = max(0.25, min(speed, remaining_distance))
             # print(f"angular speed: {angular_speed}")
             # print(f"direction: {direction}")
-            # self.move(0, direction * angular_speed)
+            self.move(0, direction * angular_speed)
             rate.sleep()
 
     def move(self, linear_speed, angular_speed):
@@ -116,6 +119,10 @@ class Base(object):
         """
         vel = Twist()
         vel.linear.x = linear_speed
+        vel.linear.y = 0
+        vel.linear.z = 0
+        vel.angular.x = 0
+        vel.angular.y = 0
         vel.angular.z = angular_speed
         self.pub.publish(vel)
 
