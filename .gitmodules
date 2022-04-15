@@ -4,3 +4,4 @@
 [submodule "simple_grasping"]
 	path = simple_grasping
 	url = https://github.com/mikeferguson/simple_grasping.git
+	ignore = dirty
