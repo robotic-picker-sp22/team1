@@ -1,7 +1,6 @@
 *.pyc
 *~
 cmake*/
-.vscode
 
-cse481c22sp/web_teleop/node_modules
-simple_grasping
+**/.vscode/
+**/node_modules/
