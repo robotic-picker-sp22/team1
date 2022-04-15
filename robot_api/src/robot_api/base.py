@@ -63,6 +63,7 @@ class Base(object):
             rate.sleep()
             remaining_distance = distance - math.sqrt((self._latest_odom.pose.pose.position.x - start.pose.pose.position.x)**2 +
                                                       (self._latest_odom.pose.pose.position.y - start.pose.pose.position.y)**2)
+        self.stop()
 
     def turn(self, angular_distance, speed=0.5):
         """Rotates the robot a certain angle.
@@ -104,6 +105,7 @@ class Base(object):
             # print(f"direction: {direction}")
             self.move(0, direction * angular_speed)
             rate.sleep()
+        self.stop()
 
     def move(self, linear_speed, angular_speed):
         """Moves the base instantaneously at given linear and angular speeds.
