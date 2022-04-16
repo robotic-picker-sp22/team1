@@ -3,6 +3,10 @@ from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, 
 from visualization_msgs.msg import Marker
 # ... Other imports ...
 import rospy
+import robot_api
+
+
+BASE = robot_api.Base()
 
 
 def wait_for_time():
@@ -50,6 +54,7 @@ def main():
 def handle_viz_input(input):
     if (input.event_type == InteractiveMarkerFeedback.BUTTON_CLICK):
         rospy.loginfo(input.marker_name + ' was clicked.')
+        BASE.go_forward(0.5)
     else:
         rospy.loginfo(f'Cannot handle this InteractiveMarker event {input.event_type}')
 
