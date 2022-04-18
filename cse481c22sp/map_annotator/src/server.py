@@ -70,6 +70,23 @@ class MapAnnotatorServer():
             tmp.header = msg.header
             self.cur_pose = tmp
 
+    def __create_pose(self, pose_name: str) -> bool:
+        with self.pose_lock:
+            self.poses_dict[pose_name] = copy.deepcopy(self.cur_pose)
+        with open(self.__SAVE_DIR / f"annotated_pose_{pose_name}.json", "w") as f:
+            json.dump(self.__pose_to_dict(self.poses_dict[pose_name]), f)
+        return True
+
+    def __delete_pose(self, pose_name: str) -> bool:
+        with self.pose_lock:
+            if self.poses_dict.pop(pose_name, None) is not None:
+                pose_path = self.__SAVE_DIR / f"annotated_pose_{pose_name}.json"
+                if pose_path.exists():
+                    pose_path.unlink()
+            else:
+                return False
+        return True
+
     def __move_to_pose(self, goal_pose: PoseStamped):
         _YAW_TOL = 0.01
         _DIST_TOL = 0.1
@@ -116,14 +133,11 @@ class MapAnnotatorServer():
 
     def callback_user_action(self, msg: UserAction):
         if msg.command == msg.CREATE:
-            with self.pose_lock:
-                self.poses_dict[msg.name] = self.cur_pose
+            if self.__create_pose(msg.name):
                 self.publish_poses_list()
         elif msg.command == msg.DELETE:
-            with self.pose_lock:
-                old_pose = self.poses_dict.pop(msg.name, None)
-                if old_pose is not None:
-                    self.publish_poses_list()
+            if self.__delete_pose(msg.name):
+                self.publish_poses_list()
         elif msg.command == msg.RENAME:
             with self.pose_lock:
                 old_pose = self.poses_dict.pop(msg.name, None)

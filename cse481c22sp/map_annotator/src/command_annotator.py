@@ -110,6 +110,10 @@ class CommandAnnotator():
     def callback_delete(self, name: str):
         if self.poses_dict.pop(name, None) is None:
             print("No pose named {} to delete.".format(name))
+        else:
+            pose_path = Path(self.__SAVE_DIR) / f"annotated_pose_{name}.json"
+            if pose_path.exists():
+                pose_path.unlink()
 
     def callback_help(self):
         print(textwrap.dedent(
