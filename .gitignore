@@ -4,3 +4,5 @@ cmake*/
 
 **/.vscode/
 **/node_modules/
+
+**/tmp_annotator_data/**
