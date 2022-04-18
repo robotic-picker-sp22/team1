@@ -58,7 +58,7 @@ class Base(object):
         distance = abs(distance)
         remaining_distance = distance
         while remaining_distance > 0:
-            print(f"remaining distance: {remaining_distance}")
+            # print(f"remaining distance: {remaining_distance}")
             linear_speed = max(0.05, min(speed, remaining_distance))
             self.move(direction * linear_speed, 0)
             rate.sleep()
@@ -103,7 +103,7 @@ class Base(object):
         # to prevent overshoot over one cycle and the consequencing redundant rotations.
         max_angle_travelled = 0
         while remaining_distance > 0 and max_angle_travelled <= angle_travelled:
-            print(remaining_distance)
+            # print(f"Remaining distance (in rad.): {remaining_distance})
             max_angle_travelled = max(angle_travelled, max_angle_travelled)
             # angular_speed = max(0.25, min(speed, remaining_distance))
             angular_speed = speed
