@@ -1,3 +1,4 @@
+import copy
 from multiprocessing import Lock
 import rospy
 from pathlib import Path
@@ -6,6 +7,8 @@ from map_annotator.msg import PoseStampedNamed, PosesStampedList, UserAction
 from nav_msgs.srv import GetPlan
 from typing import Dict, Optional
 import json
+import numpy as np
+from tf.transformations import euler_from_quaternion
 
 class MapAnnotatorServer():
     def __init__(self) -> None:
@@ -67,6 +70,50 @@ class MapAnnotatorServer():
             tmp.header = msg.header
             self.cur_pose = tmp
 
+    def __move_to_pose(self, goal_pose: PoseStamped):
+        _YAW_TOL = 0.01
+        _DIST_TOL = 0.1
+
+        with self.pose_lock:
+            cur_pose = copy.deepcopy(self.cur_pose)
+
+        distance = np.sqrt((goal_pose.pose.position.x - cur_pose.pose.position.x) ** 2 + (goal_pose.pose.position.y - cur_pose.pose.position.y) ** 2)
+        # Convert to euler angles
+        goal_yaw = euler_from_quaternion([getattr(goal_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+        cur_yaw = euler_from_quaternion([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+
+        # If we are close enough, we can just stay in place.
+        if distance < _DIST_TOL and abs(goal_yaw - cur_yaw) < _YAW_TOL:
+            print("Already at goal pose.")
+            return
+
+        while distance >= _DIST_TOL and abs(goal_yaw - cur_yaw) >= _YAW_TOL:
+            # Figure out the angle between current and the goal pose
+            go_to_goal_angle = np.arctan2(goal_pose.pose.position.y - cur_pose.pose.position.y, goal_pose.pose.position.x - cur_pose.pose.position.x)
+
+            # Rotate robot the the go_to_goal_angle
+            self._base.turn(go_to_goal_angle - cur_yaw)
+
+            # Go forward the distance between the current and the goal pose
+            # Clamp distance to account for drift
+            self._base.go_forward(min(0.5, distance))
+
+            # Convert to euler angles
+            goal_yaw = euler_from_quaternion([getattr(goal_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+            cur_yaw = euler_from_quaternion([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+
+            # Update the current pose
+            with self.pose_lock:
+                cur_pose = copy.deepcopy(self.cur_pose)
+            cur_yaw = euler_from_quaternion([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+            distance = np.sqrt((goal_pose.pose.position.x - cur_pose.pose.position.x) ** 2 + (goal_pose.pose.position.y - cur_pose.pose.position.y) ** 2)
+
+        # Rotate robot to the goal pose
+        with self.pose_lock:
+            # Adjust for drift
+            after_move_yaw = euler_from_quaternion([getattr(self.cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+        self._base.turn(goal_yaw - after_move_yaw)
+
     def callback_user_action(self, msg: UserAction):
         if msg.command == msg.CREATE:
             with self.pose_lock:
@@ -84,8 +131,8 @@ class MapAnnotatorServer():
                     self.poses_dict[msg.updated_name] = old_pose
                     self.publish_poses_list()
         elif msg.command == msg.GOTO:
-            pass
-            # TODO: Figure this out
+            if msg.name in self.poses_dict:
+                self.__move_to_pose(self.poses_dict[msg.name])
 
     def publish_poses_list(self):
         # Redo the cache if it changed
