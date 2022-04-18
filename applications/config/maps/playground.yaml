@@ -1,4 +1,4 @@
-image: /home/capstone/maps/playground.pgm
+image: ./playground.pgm
 resolution: 0.050000
 origin: [-8.062062, -8.461127, 0.000000]
 negate: 0
