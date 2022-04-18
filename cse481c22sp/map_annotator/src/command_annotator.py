@@ -1,9 +1,13 @@
+import copy
 from pathlib import Path
 from typing import Dict, Optional
 import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
 from nav_msgs.srv import GetPlan, GetPlanRequest
 from multiprocessing import Lock
+from robot_api import Base
+import numpy as np
+from tf.transformations import euler_from_quaternion
 import json
 import textwrap
 
@@ -31,14 +35,12 @@ class CommandAnnotator():
             name = path.stem.split("_")[-1]
             with open(path, "r") as f:
                 pose_dict = json.load(f)
-                pose = self.__dict_to_pose(pose_dict)
+                pose = copy.deepcopy(self.__dict_to_pose(pose_dict))
                 self.poses_dict[name] = pose
 
         rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.rospy_callback_odom)
 
-        rospy.wait_for_service("/move_base/NavfnROS/make_plan")
-        self.__send_goal_request = rospy.ServiceProxy("/move_base/NavfnROS/make_plan", GetPlan)
-        self.simple_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+        self._base = Base()
 
     @staticmethod
     def __pose_to_dict(pose: PoseStamped) -> Dict[str, Dict[str, float]]:
@@ -56,31 +58,48 @@ class CommandAnnotator():
         result = PoseStamped()
         for k, v in pose_dict.get("header", {}).items():
             setattr(result.header, k, v)
-        for k, v in pose_dict.get("position", {}).items():
+        for k, v in pose_dict.get("pose", {}).get("position", {}).items():
             setattr(result.pose.position, k, v)
-        for k, v in pose_dict.get("orientation", {}).items():
+        for k, v in pose_dict.get("pose", {}).get("orientation", {}).items():
             setattr(result.pose.orientation, k, v)
         return result
 
     def rospy_callback_odom(self, msg: PoseWithCovarianceStamped):
         with self.pose_lock:
-            tmp = PoseStamped
+            tmp = PoseStamped()
             tmp.pose = msg.pose.pose
             tmp.header = msg.header
             self.cur_pose = tmp
 
-    def callback_list(self):
+    def callback_list(self, verbose: bool = False):
         if len(self.poses_dict) == 0:
             print("No poses saved.")
             return
         print("Saved poses:")
-        for key in self.poses_dict:
+        for key, val in self.poses_dict.items():
             print("\t{}".format(key))
+            if bool(verbose):
+                print("\t\t[{x:.4g}, {y:.4g}, {theta:.4g}]".format(
+                    x=val.pose.position.x,
+                    y=val.pose.position.y,
+                    theta=euler_from_quaternion(
+                        [getattr(val.pose.orientation, x) for x in ["x", "y", "z", "w"]]
+                    )[-1],
+                ))
+        print("Current Pose")
+        if verbose:
+            print("\t[{x:.4g}, {y:.4g}, {theta:.4g}]".format(
+                x=self.cur_pose.pose.position.x,
+                y=self.cur_pose.pose.position.y,
+                theta=euler_from_quaternion(
+                    [getattr(self.cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]]
+                )[-1],
+            ))
 
     def callback_save(self, name: str):
         if self.cur_pose is not None:
             with self.pose_lock:
-                self.poses_dict[name] = self.cur_pose
+                self.poses_dict[name] = copy.deepcopy(self.cur_pose)
                 # Save pose
                 cur_pose_dict = self.__pose_to_dict(self.cur_pose)
                 with open(Path(self.__SAVE_DIR) / f"annotated_pose_{name}.json", "w") as f:
@@ -106,10 +125,35 @@ class CommandAnnotator():
 
     def callback_goto(self, name: str):
         if name in self.poses_dict:
-            print("Sending robot to {}".format(name))
-            req = GetPlanRequest(start=self.cur_pose, goal=self.poses_dict[name])
-            self.__send_goal_request(req)
-            # self.simple_pub.publish(self.poses_dict[name])
+            goal_pose = self.poses_dict[name]
+            cur_pose = self.cur_pose
+
+            # Convert to euler angles
+            goal_yaw = euler_from_quaternion([getattr(goal_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+            cur_yaw = euler_from_quaternion([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+
+            # First calculate the distance. If we are close enough, we can just stay in place.
+            distance = np.sqrt((goal_pose.pose.position.x - cur_pose.pose.position.x) ** 2 + (goal_pose.pose.position.y - cur_pose.pose.position.y) ** 2)
+            if distance < 0.1 and abs(goal_yaw - cur_yaw) < 0.05:
+                print("Already at goal pose.")
+                return
+
+            # goal_yaw = euler_from_quaternion([getattr(goal_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+            # cur_yaw = R([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]]).as_euler("zyx")[0]
+
+            # Figure out the angle between current and the goal pose
+            go_to_goal_angle = np.arctan2(goal_pose.pose.position.y - cur_pose.pose.position.y, goal_pose.pose.position.x - cur_pose.pose.position.x)
+
+            # Rotate robot the the go_to_goal_angle
+            self._base.turn(go_to_goal_angle - cur_yaw)
+
+            # TODO: There is a MASSIVE drift. It might be best to move in small chunks, and every 0.5m adjust the angle.
+            # Go forward the distance between the current and the goal pose
+            self._base.go_forward(distance)
+
+            # Rotate robot to the goal pose
+            after_move_yaw = euler_from_quaternion([getattr(self.cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+            self._base.turn(goal_yaw - after_move_yaw)
         else:
             print("No pose named {} to goto.".format(name))
 
