@@ -33,5 +33,4 @@ def moveit_error_string(val):
             MoveItErrorCodes.COLLISION_CHECKING_UNAVAILABLE: 'COLLISION_CHECKING_UNAVAILABLE',
             MoveItErrorCodes.ROBOT_STATE_STALE: 'ROBOT_STATE_STALE',
             MoveItErrorCodes.SENSOR_INFO_STALE: 'SENSOR_INFO_STALE',
-            MoveItErrorCodes.NO_IK_SOLUTION: 'NO_IK_SOLUTION'}.get(val,
-            'UNKNOWN_ERROR_CODE')
+            MoveItErrorCodes.NO_IK_SOLUTION: 'NO_IK_SOLUTION'}.get(val, 'UNKNOWN_ERROR_CODE')
