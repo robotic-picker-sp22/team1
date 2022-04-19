@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import copy
 from multiprocessing import Lock
 import rospy
