@@ -40,6 +40,8 @@ class CommandAnnotator():
 
         rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.rospy_callback_odom)
 
+        self.__move_to_publisher = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+
         self._base = Base()
 
     @staticmethod
@@ -56,8 +58,10 @@ class CommandAnnotator():
     @staticmethod
     def __dict_to_pose(pose_dict: Dict[str, Dict[str, float]]) -> PoseStamped:
         result = PoseStamped()
-        for k, v in pose_dict.get("header", {}).items():
-            setattr(result.header, k, v)
+        result.header.seq = pose_dict["header"]["seq"]
+        result.header.stamp.secs = pose_dict["header"]["stamp"]["secs"]
+        result.header.stamp.nsecs = pose_dict["header"]["stamp"]["nsecs"]
+        result.header.frame_id = pose_dict["header"]["frame_id"]
         for k, v in pose_dict.get("pose", {}).get("position", {}).items():
             setattr(result.pose.position, k, v)
         for k, v in pose_dict.get("pose", {}).get("orientation", {}).items():
@@ -129,35 +133,37 @@ class CommandAnnotator():
 
     def callback_goto(self, name: str):
         if name in self.poses_dict:
-            goal_pose = self.poses_dict[name]
-            cur_pose = self.cur_pose
+            self.__move_to_publisher.publish(self.poses_dict[name])
 
-            # Convert to euler angles
-            goal_yaw = euler_from_quaternion([getattr(goal_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
-            cur_yaw = euler_from_quaternion([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+            # goal_pose = self.poses_dict[name]
+            # cur_pose = self.cur_pose
 
-            # First calculate the distance. If we are close enough, we can just stay in place.
-            distance = np.sqrt((goal_pose.pose.position.x - cur_pose.pose.position.x) ** 2 + (goal_pose.pose.position.y - cur_pose.pose.position.y) ** 2)
-            if distance < 0.1 and abs(goal_yaw - cur_yaw) < 0.05:
-                print("Already at goal pose.")
-                return
-
+            # # Convert to euler angles
             # goal_yaw = euler_from_quaternion([getattr(goal_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
-            # cur_yaw = R([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]]).as_euler("zyx")[0]
+            # cur_yaw = euler_from_quaternion([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
 
-            # Figure out the angle between current and the goal pose
-            go_to_goal_angle = np.arctan2(goal_pose.pose.position.y - cur_pose.pose.position.y, goal_pose.pose.position.x - cur_pose.pose.position.x)
+            # # First calculate the distance. If we are close enough, we can just stay in place.
+            # distance = np.sqrt((goal_pose.pose.position.x - cur_pose.pose.position.x) ** 2 + (goal_pose.pose.position.y - cur_pose.pose.position.y) ** 2)
+            # if distance < 0.1 and abs(goal_yaw - cur_yaw) < 0.05:
+            #     print("Already at goal pose.")
+            #     return
 
-            # Rotate robot the the go_to_goal_angle
-            self._base.turn(go_to_goal_angle - cur_yaw)
+            # # goal_yaw = euler_from_quaternion([getattr(goal_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+            # # cur_yaw = R([getattr(cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]]).as_euler("zyx")[0]
 
-            # TODO: There is a MASSIVE drift. It might be best to move in small chunks, and every 0.5m adjust the angle.
-            # Go forward the distance between the current and the goal pose
-            self._base.go_forward(distance)
+            # # Figure out the angle between current and the goal pose
+            # go_to_goal_angle = np.arctan2(goal_pose.pose.position.y - cur_pose.pose.position.y, goal_pose.pose.position.x - cur_pose.pose.position.x)
 
-            # Rotate robot to the goal pose
-            after_move_yaw = euler_from_quaternion([getattr(self.cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
-            self._base.turn(goal_yaw - after_move_yaw)
+            # # Rotate robot the the go_to_goal_angle
+            # self._base.turn(go_to_goal_angle - cur_yaw)
+
+            # # TODO: There is a MASSIVE drift. It might be best to move in small chunks, and every 0.5m adjust the angle.
+            # # Go forward the distance between the current and the goal pose
+            # self._base.go_forward(distance)
+
+            # # Rotate robot to the goal pose
+            # after_move_yaw = euler_from_quaternion([getattr(self.cur_pose.pose.orientation, x) for x in ["x", "y", "z", "w"]])[-1]
+            # self._base.turn(goal_yaw - after_move_yaw)
         else:
             print("No pose named {} to goto.".format(name))
 
