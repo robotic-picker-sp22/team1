@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+# Run with arguments: ik 0.5 0 1.0
+
 from geometry_msgs.msg import PoseStamped
 import robot_api
 import rospy
