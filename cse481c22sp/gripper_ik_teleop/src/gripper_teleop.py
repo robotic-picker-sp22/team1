@@ -1,16 +1,18 @@
 #! /usr/bin/env python
 import copy
 import enum
+from multiprocessing import Lock
 from typing import Optional
 import rospy
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
 from visualization_msgs.msg import Marker, MenuEntry
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Pose, PoseStamped
 from std_msgs.msg import ColorRGBA
+from sensor_msgs.msg import JointState
 import tf
 
-from robot_api import Arm, Gripper
+from robot_api import Arm, Gripper, ArmJoints
 
 
 
@@ -34,6 +36,25 @@ def wait_for_time():
         pass
 
 
+class ArmJointsServer:
+    def __init__(self) -> None:
+        self.__arm_joints = ArmJoints()
+        self.__lock = Lock()
+
+        rospy.Subscriber('/joint_states', JointState, self.__callback_joint_states)
+
+    def __callback_joint_states(self, msg: JointState):
+        with self.__lock:
+            for name, pos in zip(msg.name, msg.position):
+                if name in self.__arm_joints.names():
+                    # Example: shoulder_pan_joint -> set_shoulder_pan
+                    getattr(self.__arm_joints, f"set_{name[:-6]}")(pos)
+
+    def get_current_arm_joints(self) -> ArmJoints:
+        with self.__lock:
+            return copy.deepcopy(self.__arm_joints)
+
+
 class GripperTeleop(object):
     OFFSET_X = 0.166
     # Techincally the TF between fingers is 0.065, but value below seems to better reflect open state
@@ -51,6 +72,7 @@ class GripperTeleop(object):
         self._cur_color = ColorRGBA(0.0, 1.0, 0.0, 1.0)
 
         self.__tf_listener = tf.TransformListener()
+        self.__arm_joints_server = ArmJointsServer()
 
     def __get_base_markers(self):
 
@@ -188,33 +210,62 @@ class GripperTeleop(object):
         elif feedback.menu_entry_id == MenuIDs.Grasp_Open.value:
             self._gripper.open()
 
+    def __get_best_pregrasp_pose(self, pose: PoseStamped) -> Optional[PoseStamped]:
+        cur_arm_joints = self.__arm_joints_server.get_current_arm_joints()
+
+        result = None
+        result_score = 100000
+
+        PREGRASP_OFFSET = 0.17
+        for (position_axis, orientation_axis) in [
+            ("x", "x"),
+            ("x", "w"),
+            ("y", "z"),
+            ("z", "y"),
+        ]:
+            for orientation_val in [-1.0, 1.0]:
+                pregrasp_pose = copy.deepcopy(pose)
+                # Offset so that object lies in the gripper
+                setattr(pregrasp_pose.pose.position, position_axis, getattr(pregrasp_pose.pose.position, position_axis) - PREGRASP_OFFSET)
+                setattr(pregrasp_pose.pose.orientation, orientation_axis, orientation_val)
+
+                arm_joints = self._arm.compute_ik(pregrasp_pose)
+                if arm_joints is not None:
+                    cur_score = cur_arm_joints.distance_from(arm_joints)
+                    if cur_score < result_score:
+                        result = pregrasp_pose
+                        result_score = cur_score
+
+        return result
+
     def grasp_object(self, object_pose: PoseStamped):
+        # 0. Calculate pre-grasp pose
+        object_pose = copy.deepcopy(object_pose)
+
+        pregrasp_pose = self.__get_best_pregrasp_pose(object_pose)
+        if pregrasp_pose is None:
+            return
+
+
         # 1. Open gripper
         self._gripper.open()
 
-        transform = self.__tf_listener.lookupTransform(
-            "gripper_link",
-            object_pose.header.frame_id,
-        )
-
-        # 2. Calculate pre-grasp pose
-        # TODO: This is incorrect. Should create a new frame for object, and then define pre-grasp pose in terms of that frame
-        object_pose = copy.deepcopy(object_pose)
-        object_pose.pose.position.x -= 0.1
-        object_pose.pose.position.y += 0.1
-
-        self.__handle_goto(object_pose)
+        self.__handle_goto(pregrasp_pose)
         self._gripper.close()
         self.__handle_goto()
 
 
 class AutoPickTeleop(object):
-    def __init__(self, arm, gripper, im_server, grasp_callback):
+    def __init__(self, arm, gripper, im_server, grasp_callback, object_name="object"):
         self._arm = arm
         self._gripper = gripper
         self._im_server = im_server
 
         self.__grasp_callback = grasp_callback
+        self.__object_name = object_name
+
+        self.__br = tf.TransformBroadcaster()
+        rospy.sleep(0.1)
 
     def __make_6dof_control(self, int_marker):
         for axis in ["x", "y", "z"]:
@@ -230,7 +281,7 @@ class AutoPickTeleop(object):
 
     def start(self):
         obj_im = InteractiveMarker()
-        obj_im.name = "Object"
+        obj_im.name = self.__object_name
         obj_im.header.stamp = rospy.Time.now()
         obj_im.description = "Object"
         obj_im.header.frame_id = "base_link"
@@ -238,6 +289,11 @@ class AutoPickTeleop(object):
         obj_im.pose.position.x = 0.5
         obj_im.pose.position.y = 0.5
         obj_im.pose.position.z = 0.5
+        obj_im.pose.orientation.w = 1
+
+        # Update tf for the first time
+        self.__update_tf(obj_im.pose, obj_im.header.frame_id, obj_im.header.stamp)
+
 
         # Create markers for the obj
         base_marker = Marker()
@@ -266,12 +322,29 @@ class AutoPickTeleop(object):
         self._im_server.insert(obj_im, feedback_cb=self.handle_feedback)
         self._im_server.applyChanges()
 
+    def __update_tf(self, pose: Pose, parent_frame: str, stamp: rospy.Time):
+        self.__br.sendTransform(
+            translation=(pose.position.x, pose.position.y, pose.position.z),
+            rotation=(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w),
+            time=stamp,
+            child=self.__object_name,
+            parent=parent_frame
+        )
+
     def handle_feedback(self, feedback):
+        if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
+            # Update tf
+            self.__update_tf(feedback.pose, feedback.header.frame_id, rospy.Time.now())
+
         if feedback.event_type == InteractiveMarkerFeedback.MENU_SELECT:
             if feedback.menu_entry_id == 1:
                 pose = PoseStamped()
                 pose.header = feedback.header
-                pose.pose = feedback.pose
+                pose.header.frame_id = self.__object_name
+
+                # Since we changed the frame of the pose, the position should be 0
+                pose.pose = Pose()
+                pose.pose.orientation.w = 1.0
                 self.__grasp_callback(pose)
 
 def main():
