@@ -19,7 +19,9 @@ R_FINGER_MESH = 'package://fetch_description/meshes/r_gripper_finger_link.STL'
 
 
 class MenuIDs(enum.Enum):
-    GOTO: int = 1
+    Go_To: int = 1
+    Grasp_Close: int = 2
+    Grasp_Open: int = 3
 
 
 def wait_for_time():
@@ -41,9 +43,10 @@ class GripperTeleop(object):
         self._cur_color = ColorRGBA(0.0, 1.0, 0.0, 1.0)
 
     def __get_base_markers(self):
-
-        OFFSET_X = 0.17
-        OFFSET_X = 0.16645
+        OFFSET_X = 0.166
+        # Techincally the TF between fingers is 0.065, but value below seems to better reflect open state
+        # TODO: We can just subscribe to current TF and use that? It will change if gripper is activated
+        OFFSET_FINGERS_Y = 0.0535
 
         gripper_marker = Marker()
         gripper_marker.type = Marker.MESH_RESOURCE
@@ -59,7 +62,7 @@ class GripperTeleop(object):
         l_finger_marker.type = Marker.MESH_RESOURCE
         l_finger_marker.mesh_resource = L_FINGER_MESH
         l_finger_marker.pose.position.x = OFFSET_X
-        l_finger_marker.pose.position.y = -0.055
+        l_finger_marker.pose.position.y = -OFFSET_FINGERS_Y
         l_finger_marker.scale.x = 1.0
         l_finger_marker.scale.y = 1.0
         l_finger_marker.scale.z = 1.0
@@ -71,7 +74,7 @@ class GripperTeleop(object):
         r_finger_marker.type = Marker.MESH_RESOURCE
         r_finger_marker.mesh_resource = R_FINGER_MESH
         r_finger_marker.pose.position.x = OFFSET_X
-        r_finger_marker.pose.position.y = 0.055
+        r_finger_marker.pose.position.y = OFFSET_FINGERS_Y
         r_finger_marker.scale.x = 1.0
         r_finger_marker.scale.y = 1.0
         r_finger_marker.scale.z = 1.0
@@ -99,14 +102,14 @@ class GripperTeleop(object):
         int_marker.controls.append(control_fingers)
 
     def __make_menu_control(self, im_marker):
-        goto_entry = MenuEntry()
-        goto_entry.id = MenuIDs.GOTO.value
-        goto_entry.parent_id = 0
-        goto_entry.title = "Go to"
-        goto_entry.command_type = MenuEntry.FEEDBACK
+        for menu_key, menu_value in MenuIDs.__members__.items():
 
-        im_marker.menu_entries.append(goto_entry)
-
+            goto_entry = MenuEntry()
+            goto_entry.id = menu_value.value
+            goto_entry.parent_id = 0
+            goto_entry.title = menu_key.replace("_", " ")
+            goto_entry.command_type = MenuEntry.FEEDBACK
+            im_marker.menu_entries.append(goto_entry)
 
     def __update_colors(self):
         if self._im_marker is None:
@@ -161,16 +164,27 @@ class GripperTeleop(object):
             self._cur_color.g = 0.0
         self.__update_colors()
 
+    def __handle_goto(self) -> bool:
+        if self._last_pose is None:
+            return False
+
+        arm_joints = self._arm.compute_ik(self._last_pose)
+        if arm_joints is None:
+            return False
+
+        self._arm.move_to_joints(arm_joints)
+        return True
+
     def handle_menu_select(self, feedback: InteractiveMarkerFeedback):
-        if feedback.menu_entry_id == MenuIDs.GOTO.value:
-            if self._last_pose is None:
-                return
+        if feedback.menu_entry_id == MenuIDs.Go_To.value:
+            self.__handle_goto()
+        elif feedback.menu_entry_id == MenuIDs.Grasp_Close.value:
+            if self.__handle_goto():
+                self._gripper.close()
+        elif feedback.menu_entry_id == MenuIDs.Grasp_Open.value:
+            if self.__handle_goto():
+                self._gripper.open()
 
-            arm_joints = self._arm.compute_ik(self._last_pose)
-            if arm_joints is None:
-                return
-
-            self._arm.move_to_joints(arm_joints)
 
 
 class AutoPickTeleop(object):
