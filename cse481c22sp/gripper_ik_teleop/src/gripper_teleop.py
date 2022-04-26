@@ -8,9 +8,12 @@ from interactive_markers.interactive_marker_server import InteractiveMarkerServe
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
 from visualization_msgs.msg import Marker, MenuEntry
 from geometry_msgs.msg import Pose, PoseStamped
+from tf2_geometry_msgs import PoseStamped as PoseStampedTF2
 from std_msgs.msg import ColorRGBA
 from sensor_msgs.msg import JointState
 import tf
+from moveit_python import PlanningSceneInterface
+
 
 from robot_api import Arm, Gripper, ArmJoints
 
@@ -111,20 +114,21 @@ class GripperTeleop(object):
     def __make_6dof_control(self, int_marker, base_markers):
         control_gripper = InteractiveMarkerControl()
         control_gripper.always_visible = True
-        control_gripper.markers.append(base_markers[0])
+        control_gripper.markers.extend(base_markers)
 
         control_gripper.name = "move"
         control_gripper.interaction_mode = InteractiveMarkerControl.MOVE_3D
         int_marker.controls.append(control_gripper)
 
-
-        control_fingers = InteractiveMarkerControl()
-        control_fingers.always_visible = True
-        control_fingers.markers.extend(base_markers[1:])
-
-        control_fingers.name = "rotate"
-        control_fingers.interaction_mode = InteractiveMarkerControl.ROTATE_3D
-        int_marker.controls.append(control_fingers)
+        for axis in ["x", "y", "z"]:
+            for dof in ["rotate"]:
+                control = InteractiveMarkerControl()
+                control.always_visible = True
+                control.name = f"gripper_{dof}_{axis}"
+                control.orientation.w = 1
+                setattr(control.orientation, axis, 1)
+                control.interaction_mode = getattr(InteractiveMarkerControl, f"{dof.upper()}_AXIS")
+                int_marker.controls.append(control)
 
     def __make_menu_control(self, im_marker):
         for menu_key, menu_value in MenuIDs.__members__.items():
@@ -189,7 +193,7 @@ class GripperTeleop(object):
             self._cur_color.g = 0.0
         self.__update_colors()
 
-    def __handle_goto(self, pose: Optional[PoseStamped] = None) -> bool:
+    def __handle_goto(self, pose: Optional[PoseStamped] = None, use_raw_joints: bool = False) -> bool:
         pose = pose if pose is not None else self._last_pose
 
         if pose is None:
@@ -197,9 +201,31 @@ class GripperTeleop(object):
 
         arm_joints = self._arm.compute_ik(pose)
         if arm_joints is None:
+            print("arm_joints not found")
             return False
 
-        self._arm.move_to_joints(arm_joints)
+        if use_raw_joints:
+            print("arm_joints move_to_joints")
+            self._arm.move_to_joints(arm_joints)
+        else:
+            pose_tf2 = PoseStampedTF2()
+            pose_tf2.header.frame_id = pose.header.frame_id
+            pose_tf2.header.stamp = pose.header.stamp
+            pose_tf2.pose = pose.pose
+            
+            self.__tf_listener.waitForTransform("map", pose_tf2.header.frame_id, pose.header.stamp, rospy.Duration(10))
+            pose_tf2 = self.__tf_listener.transformPose("map", pose_tf2)
+            self.__tf_listener.waitForTransform("base_link", pose_tf2.header.frame_id, pose.header.stamp, rospy.Duration(10))
+            pose_tf2 = self.__tf_listener.transformPose("base_link", pose_tf2)
+            
+            self._arm.move_to_pose(
+                pose_tf2,
+                allowed_planning_time=15,
+                execution_timeout=10,
+                num_planning_attempts=5,
+                replan=False,
+            )
+
         return True
 
     def handle_menu_select(self, feedback: InteractiveMarkerFeedback):
@@ -210,20 +236,21 @@ class GripperTeleop(object):
         elif feedback.menu_entry_id == MenuIDs.Grasp_Open.value:
             self._gripper.open()
 
-    def __get_best_pregrasp_pose(self, pose: PoseStamped) -> Optional[PoseStamped]:
+    def __get_best_grasp_pose(self, pose: PoseStamped) -> Optional[PoseStamped]:
         cur_arm_joints = self.__arm_joints_server.get_current_arm_joints()
 
         result = None
         result_score = 100000
+        result_pos_axis = None
 
         PREGRASP_OFFSET = 0.17
         for (position_axis, orientation_axis) in [
-            ("x", "x"),
+            # ("x", "x"),
             ("x", "w"),
-            ("y", "z"),
-            ("z", "y"),
+            # ("y", "z"),
+            # ("z", "y"),
         ]:
-            for orientation_val in [-1.0, 1.0]:
+            for orientation_val in [1.0]:
                 pregrasp_pose = copy.deepcopy(pose)
                 # Offset so that object lies in the gripper
                 setattr(pregrasp_pose.pose.position, position_axis, getattr(pregrasp_pose.pose.position, position_axis) - PREGRASP_OFFSET)
@@ -233,24 +260,35 @@ class GripperTeleop(object):
                 if arm_joints is not None:
                     cur_score = cur_arm_joints.distance_from(arm_joints)
                     if cur_score < result_score:
+                        print(f"orientation_axis: {position_axis}")
+                        print(f"orientation_axis: {orientation_axis}")
                         result = pregrasp_pose
                         result_score = cur_score
+                        result_pos_axis = position_axis
 
-        return result
+        return result, result_pos_axis
 
     def grasp_object(self, object_pose: PoseStamped):
         # 0. Calculate pre-grasp pose
         object_pose = copy.deepcopy(object_pose)
 
-        pregrasp_pose = self.__get_best_pregrasp_pose(object_pose)
-        if pregrasp_pose is None:
+        
+        grasp_pose, pos_axis = self.__get_best_grasp_pose(object_pose)
+        if grasp_pose is None:
             return
 
 
         # 1. Open gripper
         self._gripper.open()
 
+        pregrasp_pose = copy.deepcopy(grasp_pose)
+        if pos_axis == "x":
+            pregrasp_pose.pose.position.x -= 0.15
+        elif pos_axis == "z":
+            pregrasp_pose.pose.position.z += 0.
+
         self.__handle_goto(pregrasp_pose)
+        self.__handle_goto(grasp_pose, use_raw_joints=True)
         self._gripper.close()
         self.__handle_goto()
 
@@ -263,6 +301,8 @@ class AutoPickTeleop(object):
 
         self.__grasp_callback = grasp_callback
         self.__object_name = object_name
+
+        self.__planning_scene = PlanningSceneInterface('map')
 
         self.__br = tf.TransformBroadcaster()
         rospy.sleep(0.1)
@@ -299,9 +339,9 @@ class AutoPickTeleop(object):
         base_marker = Marker()
         base_marker.type = Marker.CUBE
         base_marker.color = ColorRGBA(255.0 / 255, 240.0 / 255, 0 / 255, 1.0)
-        base_marker.scale.x = 0.05
-        base_marker.scale.y = 0.05
-        base_marker.scale.z = 0.05
+        base_marker.scale.x = 0.065
+        base_marker.scale.y = 0.065
+        base_marker.scale.z = 0.065
 
         # Add base marker to the interactive marker
         fake_control = InteractiveMarkerControl()
@@ -334,6 +374,10 @@ class AutoPickTeleop(object):
     def handle_feedback(self, feedback):
         if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
             # Update tf
+            if feedback.header.frame_id == "map":
+                self.__planning_scene.removeCollisionObject(self.__object_name)
+                self.__planning_scene.addBox(self.__object_name, 0.065, 0.065, 0.065, feedback.pose.position.x, feedback.pose.position.y, feedback.pose.position.z)
+
             self.__update_tf(feedback.pose, feedback.header.frame_id, rospy.Time.now())
 
         if feedback.event_type == InteractiveMarkerFeedback.MENU_SELECT:

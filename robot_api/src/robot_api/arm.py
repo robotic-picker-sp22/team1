@@ -86,6 +86,8 @@ class Arm(object):
         Returns:
             string describing the error if an error occurred, else None.
         """
+        assert pose_stamped.header.frame_id == "base_link"
+
         goal_builder = MoveItGoalBuilder()
         goal_builder.set_pose_goal(pose_stamped)
         goal_builder.allowed_planning_time = allowed_planning_time

@@ -24,27 +24,25 @@ def main():
     rospy.init_node('lab26_obstacles')
     wait_for_time()
 
-    planning_scene = PlanningSceneInterface('base_link')
+    # planning_scene = PlanningSceneInterface('base_link')
+    planning_scene = PlanningSceneInterface('map')
     planning_scene.clear()
 
     planning_scene.removeCollisionObject('table')
     planning_scene.removeCollisionObject('floor')
 
-    planning_scene.addBox('table', 0.5, 1, 0.72, 1, 0, 0.72 / 2)
-    # table = CollisionObject()
-    # table.header.frame_id = 'base_link'
-    # table.operation = CollisionObject.ADD
-    # table.id = 'table'
-    # table.primitives.append(SolidPrimitive(type=SolidPrimitive.BOX, dimensions=[0.5, 1.0, 0.72]))
-    # table_pose = Pose()
-    # table_pose.position.x = 1.0
-    # table_pose.position.y = 0.0
-    # table_pose.position.z = 0.72 / 2.0
-    # table.primitive_poses.append(table_pose)
-    # planning_scene.addCollisionObject(table)
+    # # base link
+    # planning_scene.addBox('table', 0.5, 1, 0.83, 1, 0, 0.72 / 2)
+    # map
+    planning_scene.addBox('table', 1, 1, 1.52, 4, 3, 0.0)
 
 
-    planning_scene.addBox('floor', 2, 2, 0.01, 0, 0, 0.01 / 2)
+    # Map frame
+    # Front left corner: 3.6, 3.3, 0.76
+    # Back right corner: 4.5, 2.75, 0.76
+
+
+    # planning_scene.addBox('floor', 2, 2, 0.01, 0, 0, 0.01 / 2)
     # floor = CollisionObject()
     # floor.header.frame_id = 'base_link'
     # floor.operation = CollisionObject.ADD
