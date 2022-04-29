@@ -1,3 +1,4 @@
+from typing import Optional
 import rospy
 from actionlib import SimpleActionClient
 from control_msgs.msg import (FollowJointTrajectoryAction,
@@ -85,6 +86,8 @@ class Arm(object):
         Returns:
             string describing the error if an error occurred, else None.
         """
+        assert pose_stamped.header.frame_id == "base_link"
+
         goal_builder = MoveItGoalBuilder()
         goal_builder.set_pose_goal(pose_stamped)
         goal_builder.allowed_planning_time = allowed_planning_time
@@ -130,7 +133,7 @@ class Arm(object):
 
     from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
 
-    def compute_ik(self, pose_stamped, timeout=rospy.Duration(5)):
+    def compute_ik(self, pose_stamped, timeout=rospy.Duration(5)) -> Optional[ArmJoints]:
         """Computes inverse kinematics for the given pose.
 
         Note: if you are interested in returning the IK solutions, we have
@@ -151,10 +154,12 @@ class Arm(object):
         error_str = moveit_error_string(response.error_code.val)
         success = error_str == 'SUCCESS'
         if not success:
-            rospy.logwarn("IK Solution error: %s" % error_str)
-            return False
+            # rospy.logwarn("IK Solution error: %s" % error_str)
+            return None
         joint_state = response.solution.joint_state
+
+        arm_joint = ArmJoints()
         for name, position in zip(joint_state.name, joint_state.position):
-            if name in ArmJoints.names():
-                rospy.loginfo('{}: {}'.format(name, position))
-        return True
+            if name in arm_joint.names():
+                getattr(arm_joint, f"set_{name[:-6]}")(position)
+        return arm_joint
