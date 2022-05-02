@@ -5,3 +5,7 @@
 	path = simple_grasping
 	url = https://github.com/mikeferguson/simple_grasping.git
 	ignore = dirty
+[submodule "moveit_msgs"]
+	path = moveit_msgs
+	url = https://github.com/ros-planning/moveit_msgs.git
+	branch = melodic-devel
