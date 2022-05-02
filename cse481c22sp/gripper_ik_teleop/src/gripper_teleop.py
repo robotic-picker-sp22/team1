@@ -200,11 +200,9 @@ class GripperTeleop(object):
 
         arm_joints = self._arm.compute_ik(pose)
         if arm_joints is None:
-            print("arm_joints not found")
             return False
 
         if use_raw_joints:
-            print("arm_joints move_to_joints")
             self._arm.move_to_joints(arm_joints)
         else:
             pose_tf2 = PoseStampedTF2()
@@ -217,13 +215,13 @@ class GripperTeleop(object):
             self.__tf_listener.waitForTransform("base_link", pose_tf2.header.frame_id, pose.header.stamp, rospy.Duration(10))
             pose_tf2 = self.__tf_listener.transformPose("base_link", pose_tf2)
             
-            self._arm.move_to_pose(
+            rospy.loginfo(self._arm.move_to_pose(
                 pose_tf2,
                 allowed_planning_time=15,
                 execution_timeout=10,
                 num_planning_attempts=5,
                 replan=False,
-            )
+            ))
 
         return True
 
@@ -301,7 +299,7 @@ class AutoPickTeleop(object):
         self.__grasp_callback = grasp_callback
         self.__object_name = object_name
 
-        self.__planning_scene = PlanningSceneInterface('map')
+        # self.__planning_scene = PlanningSceneInterface('base_link')
 
         self.__br = tf.TransformBroadcaster()
         rospy.sleep(0.1)
@@ -373,9 +371,9 @@ class AutoPickTeleop(object):
     def handle_feedback(self, feedback):
         if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
             # Update tf
-            if feedback.header.frame_id == "map":
-                self.__planning_scene.removeCollisionObject(self.__object_name)
-                self.__planning_scene.addBox(self.__object_name, 0.065, 0.065, 0.065, feedback.pose.position.x, feedback.pose.position.y, feedback.pose.position.z)
+            # if feedback.header.frame_id == "map":
+            #     self.__planning_scene.removeCollisionObject(self.__object_name)
+            #     self.__planning_scene.addBox(self.__object_name, 0.065, 0.065, 0.065, feedback.pose.position.x, feedback.pose.position.y, feedback.pose.position.z)
 
             self.__update_tf(feedback.pose, feedback.header.frame_id, rospy.Time.now())
 
