@@ -398,8 +398,8 @@ def main():
     arm = Arm()
     gripper = Gripper()
 
-    im_server = InteractiveMarkerServer('gripper_im_server')
-    auto_pick_im_server = InteractiveMarkerServer('auto_pick_im_server')
+    im_server = InteractiveMarkerServer('gripper_im_server', q_size=2)
+    auto_pick_im_server = InteractiveMarkerServer('auto_pick_im_server', q_size=2)
     teleop = GripperTeleop(arm, gripper, im_server)
     auto_pick = AutoPickTeleop(arm, gripper, auto_pick_im_server, teleop.grasp_object)
     teleop.start()

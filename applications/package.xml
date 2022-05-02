@@ -9,6 +9,7 @@
   <depend>roscpp</depend>
   <depend>rospy</depend>
   <depend>joint_state_reader</depend>
+  <depend>moveit_msgs</depend>
   <export>
   </export>
 </package>

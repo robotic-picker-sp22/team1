@@ -6,6 +6,7 @@ project(applications)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  moveit_msgs
   rospy
 )
 
@@ -106,7 +107,7 @@ endif (POLICY CMP0048)
 catkin_package(
 #  INCLUDE_DIRS maps
 #  LIBRARIES applications
-#  CATKIN_DEPENDS roscpp rospy
+  CATKIN_DEPENDS moveit_msgs
 #  DEPENDS system_lib
 )
 
@@ -118,6 +119,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include ${moveit_msgs_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 

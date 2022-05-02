@@ -24,6 +24,15 @@ def main():
     rospy.init_node('lab26_obstacles')
     wait_for_time()
 
+    # Real robot planning scene
+    planning_scene = PlanningSceneInterface('base_link')
+    planning_scene.clear()
+    planning_scene.removeCollisionObject('table')
+    planning_scene.removeCollisionObject('floor')
+    planning_scene.addBox('floor', 2, 2, 0.01, 0, 0, 0.01/2)
+    planning_scene.addBox('table', 0.5, 1, 0.72, 1, 0, 0.72/2)
+
+    """
     # planning_scene = PlanningSceneInterface('base_link')
     planning_scene = PlanningSceneInterface('map')
     planning_scene.clear()
@@ -56,7 +65,7 @@ def main():
     # planning_scene.addCollisionObject(floor)
 
     rospy.sleep(2)
-
+    """
 
 if __name__ == '__main__':
     main()
