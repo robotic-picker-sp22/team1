@@ -1,4 +1,3 @@
-from typing import Optional
 import rospy
 from actionlib import SimpleActionClient
 from control_msgs.msg import (FollowJointTrajectoryAction,
@@ -33,7 +32,7 @@ class Arm(object):
 
         self.client.wait_for_server()
 
-    def move_to_joints(self, arm_joints: ArmJoints):
+    def move_to_joints(self, arm_joints):
         """Moves the robot's arm to the given joints.
 
         Args:
@@ -133,7 +132,7 @@ class Arm(object):
 
     from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
 
-    def compute_ik(self, pose_stamped, timeout=rospy.Duration(5)) -> Optional[ArmJoints]:
+    def compute_ik(self, pose_stamped, timeout=rospy.Duration(5)):
         """Computes inverse kinematics for the given pose.
 
         Note: if you are interested in returning the IK solutions, we have
@@ -161,5 +160,5 @@ class Arm(object):
         arm_joint = ArmJoints()
         for name, position in zip(joint_state.name, joint_state.position):
             if name in arm_joint.names():
-                getattr(arm_joint, f"set_{name[:-6]}")(position)
+                getattr(arm_joint, "set_{}".format(name[:-6]))(position)
         return arm_joint

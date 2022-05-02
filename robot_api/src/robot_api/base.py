@@ -8,7 +8,7 @@ import rospy
 import tf.transformations as tft
 
 
-def get_angle(odometry: Odometry):
+def get_angle(odometry):
     quaternion = odometry.pose.pose.orientation
     matrix = tft.quaternion_matrix(
         [quaternion.x, quaternion.y, quaternion.z, quaternion.w])
@@ -33,7 +33,7 @@ class Base(object):
             'odom', Odometry, callback=self._odom_callback)
         self._latest_odom = None
 
-    def _odom_callback(self, msg: Odometry):
+    def _odom_callback(self, msg):
         self._latest_odom = msg
 
     def go_forward(self, distance, speed=0.1):

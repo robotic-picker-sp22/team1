@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import math
-from typing import Optional
 
 import rospy
 import actionlib
@@ -60,7 +59,7 @@ class Head(object):
         self._last_pan = None
         self._last_tilt = None
 
-    def joint_states_callback(self, msg: JointState):
+    def joint_states_callback(self, msg):
         """Callback for the joint_states topic.
 
         This is used to get the current pan/tilt angles.
@@ -92,7 +91,7 @@ class Head(object):
         self.look_at_client.send_goal_and_wait(goal)
         return self.look_at_client.get_result()
 
-    def pan_tilt(self, pan: Optional[float] = None, tilt: Optional[float] = None):
+    def pan_tilt(self, pan=None, tilt=None):
         """Moves the head by setting pan/tilt angles.
 
               Args:

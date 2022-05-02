@@ -107,7 +107,7 @@ class ArmJoints(object):
         val = self._clamp_val(val, 'wrist_roll')
         self.wrist_roll = val
 
-    def distance_from(self, other: "ArmJoints"):
+    def distance_from(self, other):
         return math.sqrt(
             sum([
                 (self_val - other_val) ** 2
