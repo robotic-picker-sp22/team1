@@ -1,11 +1,8 @@
-from typing import List
+# ! /usr/bin/env python
 
 import rosbag
 import rospy
-from ar_track_alvar_msgs.msg import AlvarMarkers, AlvarMarker
-
-# ! /usr/bin/env python
-
+from ar_track_alvar_msgs.msg import AlvarMarkers
 
 HALLUCINATE = True
 
@@ -19,7 +16,7 @@ def wait_for_time():
 
 class ArTagReader(object):
     def __init__(self):
-        self.markers: List[AlvarMarker] = []
+        self.markers = []
 
     def callback(self, msg):
         self.markers = msg.markers
