@@ -36,6 +36,7 @@ def main():
 
     reader = ArTagReader()
     sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, callback=reader.callback, queue_size=10)
+    rospy.spin()
 
 
 if __name__ == '__main__':
