@@ -1,0 +1,19 @@
+<launch>
+  <arg name="sim" default="true"/>
+
+  <group if="$(arg sim)">
+    <include file="$(find fetch_gazebo)/launch/playground.launch" />
+    <include file="$(find applications)/launch/nav_rviz.launch" />
+    <node pkg="applications" type="publish_saved_cloud.py" name="publish_saved_cloud" args="$(find applications)/data/mock-tags.bag"/>
+    <include file="$(find robot_api)/launch/ar_desktop.launch">
+      <arg name="cam_image_topic" value="mock_point_cloud" />
+    </include>
+  </group>
+
+  <group unless="$(arg sim)">
+      <node pkg="rviz" type="rviz" name="$(anon rviz)" />
+  </group>
+
+  <include file="$(find robot_api)/launch/move_group.launch" />
+
+</launch>
