@@ -4,5 +4,6 @@ cmake*/
 
 **/.vscode/
 **/node_modules/
+**/.idea/
 
 **/tmp_annotator_data/**

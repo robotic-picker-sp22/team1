@@ -1,10 +1,15 @@
-#! /usr/bin/env python
+from typing import List
 
-from ar_track_alvar_msgs.msg import AlvarMarkers
+import rospy
+
+from ar_track_alvar_msgs.msg import AlvarMarkers, AlvarMarker
 from geometry_msgs.msg import PoseStamped
 import robot_api
 import rospy
 import rosbag
+
+# ! /usr/bin/env python
+
 
 HALLUCINATE = True
 
@@ -18,7 +23,7 @@ def wait_for_time():
 
 class ArTagReader(object):
     def __init__(self):
-        self.markers = []
+        self.markers: List[AlvarMarker] = []
 
     def callback(self, msg):
         self.markers = msg.markers
@@ -27,15 +32,6 @@ class ArTagReader(object):
 def main():
     rospy.init_node("hallucinations")
     wait_for_time()
-
-    start = PoseStamped()
-    start.header.frame_id = 'base_link'
-    start.pose.position.x = 0.5
-    start.pose.position.y = 0.5
-    start.pose.position.z = 0.75
-    print(start)
-    arm = robot_api.Arm()
-    arm.move_to_pose(start)
 
     reader = ArTagReader()
     sub = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, callback=reader.callback, queue_size=10)
@@ -54,20 +50,14 @@ def main():
     while len(reader.markers) == 0:
         rospy.sleep(0.1)
 
-    for marker in reader.markers:
-        marker.pose.header.frame_id = 'base_link'
-        marker.pose.pose.orientation.x = 0
-        marker.pose.pose.orientation.y = 0
-        marker.pose.pose.orientation.z = 0
-        marker.pose.pose.orientation.w = 0
-        print(marker)
-        error = arm.move_to_pose(marker.pose)
-        if error is None:
-            rospy.loginfo('Moved to marker {}'.format(marker.id))
-            return
-        else:
-            rospy.logwarn('Failed to move to marker {} with error {}'.format(marker.id, error))
-    rospy.logerr('Failed to move to any markers!')
+    marker = next(filter(lambda m: m.id == 0, reader.markers))  # maybe support cropping multiple markers
+    marker_position = marker.pose.pose.position
+    rospy.set_param("crop_min_x", marker_position.x)
+    rospy.set_param("crop_min_y", marker_position.y - 0.26)
+    rospy.set_param("crop_min_z", marker_position.z - 0.15)
+    rospy.set_param("crop_max_x", marker_position.x + 0.3)
+    rospy.set_param("crop_max_y", marker_position.y - 0.12)
+    rospy.set_param("crop_max_z", marker_position.z - 0.02)
 
 
 if __name__ == '__main__':
