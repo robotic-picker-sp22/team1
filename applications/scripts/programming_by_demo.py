@@ -6,8 +6,9 @@ import tf
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from multiprocessing import Lock
 from geometry_msgs.msg import PoseStamped, Pose
-from robot_api import Gripper
+from robot_api import Arm, Gripper
 import pickle
+from tf2_geometry_msgs import PoseStamped as PoseStampedTF2
 from robot_controllers_msgs.msg import ControllerState, QueryControllerStatesGoal
 
 
@@ -22,6 +23,59 @@ def wait_for_time():
         pass
 
 
+class ActionExecutor():
+    def __init__(self):
+        self._arm = Arm()
+        self.__gripper = Gripper()
+        self.__tf_listener = tf.TransformListener()
+
+    def __goto_action(self, pose, use_raw_joints=False):
+        pose = pose if pose is not None else self._last_pose
+
+        if pose is None:
+            return False
+
+        arm_joints = self._arm.compute_ik(pose)
+        if arm_joints is None:
+            return False
+
+        if use_raw_joints:
+            self._arm.move_to_joints(arm_joints)
+        else:
+            pose_tf2 = PoseStampedTF2()
+            pose_tf2.header.frame_id = pose.header.frame_id
+            pose_tf2.header.stamp = pose.header.stamp
+            pose_tf2.pose = pose.pose
+
+            # self.__tf_listener.waitForTransform("map", pose_tf2.header.frame_id, pose.header.stamp, rospy.Duration(10))
+            # pose_tf2 = self.__tf_listener.transformPose("map", pose_tf2)
+            self.__tf_listener.waitForTransform("base_link", pose_tf2.header.frame_id, pose.header.stamp, rospy.Duration(10))
+            pose_tf2 = self.__tf_listener.transformPose("base_link", pose_tf2)
+
+            rospy.loginfo(self._arm.move_to_pose(
+                pose_tf2,
+                allowed_planning_time=15,
+                execution_timeout=10,
+                num_planning_attempts=5,
+                replan=False,
+            ))
+
+        return True
+
+
+    def execute_program(self, program):
+        for action in program:
+            action_name = action[0]
+
+            if action_name == 'goto':
+                pose = action[1]
+                self.__goto_action(pose)
+            elif action_name == 'opengripper':
+                self.__gripper.open()
+            elif action_name == 'closegripper':
+                self.__gripper.close()
+
+
 class ActionSaver():
     def __init__(self):
         self.__tf_listener = tf.TransformListener()
@@ -33,6 +87,7 @@ class ActionSaver():
         self.__cur_program = []
 
         self.__gripper = Gripper()
+        self.__executor = ActionExecutor()
 
     def __alvar_markers_callback(self, markers):
         with self.__cur_markers_lock:
@@ -97,6 +152,19 @@ class ActionSaver():
         with open(f"{program_name}.prog.pkl", mode="wb") as f:
             pickle.dump(self.__cur_program, f)
 
+    def __save_program(self):
+        print("What's the programs name? (.prog.pkl will be appended to the end)")
+        program_name = input(">")
+        try:
+            with open(f"{program_name}.prog.pkl", mode="rb") as f:
+                program_to_execute = pickle.load(f)
+        except:
+            print("Program not found!")
+            return
+
+        self.__executor.execute_program(program_to_execute)
+
+
     def __relax(self):
         self.__change_state(ControllerState.STOPPED)
 
@@ -124,6 +192,7 @@ class ActionSaver():
         print("\top OR opengripper - Open gripper and save opening it into the program")
         print("\tcg OR closegripper - Close gripper and save closing it into the program")
         print("\ts OR save - Save current program into a file (Asks for a file name).")
+        print("\tl OR load - Load a program from a file (Asks for a file name).")
         print("\th or help - Print this help.")
 
     @staticmethod
@@ -150,6 +219,8 @@ class ActionSaver():
             self.__close_gripper()
         elif command in {"s", "save"}:
             self.__save_program
+        elif command in {"l", "load"}:
+            self.__load_program
         elif command in {"h", "help"}:
             self.__help()
         else:
