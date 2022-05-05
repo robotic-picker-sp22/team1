@@ -3,13 +3,14 @@
 import math
 import rospy
 import tf
+from actionlib import SimpleActionClient
 from ar_track_alvar_msgs.msg import AlvarMarkers
 from multiprocessing import Lock
 from geometry_msgs.msg import PoseStamped, Pose
 from robot_api import Arm, Gripper
 import pickle
 from tf2_geometry_msgs import PoseStamped as PoseStampedTF2
-from robot_controllers_msgs.msg import ControllerState, QueryControllerStatesGoal
+from robot_controllers_msgs.msg import ControllerState, QueryControllerStatesGoal, QueryControllerStatesAction
 
 
 """
@@ -97,6 +98,11 @@ class ActionSaver():
         self.__gripper = Gripper()
         self.__executor = ActionExecutor()
 
+        self._controller_client = SimpleActionClient(
+            "/query_controller_states",
+            QueryControllerStatesAction
+        )
+
     def __alvar_markers_callback(self, markers):
         with self.__cur_markers_lock:
             for marker in markers.markers:
@@ -109,8 +115,9 @@ class ActionSaver():
 
     def __save_pose(self):
         t = rospy.Time.now()
-        self.__tf_listener.waitForTransform("wrist_flex_link", "base_link", t, rospy.Duration(10))
-        position, orientation = self.__tf_listener.lookupTransform("base_link", "wrist_flex_link", t)
+        pos_link = "gripper_link"
+        self.__tf_listener.waitForTransform(pos_link, "base_link", t, rospy.Duration(10))
+        position, orientation = self.__tf_listener.lookupTransform("base_link", pos_link, t)
 
         # Create wrist pose
         wrist_pose = PoseStamped()
@@ -189,7 +196,10 @@ class ActionSaver():
         self.__change_state(ControllerState.RUNNING)
 
     def __change_state(self, state):
-        if rospy.get_param("use_sim_time"):
+        try:
+            if rospy.get_param("use_sim_time"):
+                return
+        except:
             pass
 
         goal = QueryControllerStatesGoal()
