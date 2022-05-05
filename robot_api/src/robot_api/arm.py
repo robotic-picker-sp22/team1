@@ -130,8 +130,6 @@ class Arm(object):
             tolerance=tolerance,
             plan_only=True)
 
-    from moveit_msgs.srv import GetPositionIK, GetPositionIKRequest
-
     def compute_ik(self, pose_stamped, timeout=rospy.Duration(5)):
         """Computes inverse kinematics for the given pose.
 
@@ -153,6 +151,7 @@ class Arm(object):
         error_str = moveit_error_string(response.error_code.val)
         success = error_str == 'SUCCESS'
         if not success:
+            print("Failed to find IK solution: %s" % error_str)
             # rospy.logwarn("IK Solution error: %s" % error_str)
             return None
         joint_state = response.solution.joint_state
