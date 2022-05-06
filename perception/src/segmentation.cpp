@@ -10,6 +10,14 @@
 #include <pcl/common/common.h>
 #include "pcl/filters/extract_indices.h"
 #include "perception/object.h"
+#include <iostream>
+#include <vector>
+
+#include <pcl/search/search.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/segmentation/region_growing.h>
+#include <pcl/segmentation/region_growing_rgb.h>
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
@@ -53,19 +61,9 @@ namespace perception
     void Segmenter::SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                                       std::vector<pcl::PointIndices> *indices)
     {
-        double cluster_tolerance;
-        int min_cluster_size, max_cluster_size;
-        ros::param::param("ec_cluster_tolerance", cluster_tolerance, 0.01);
-        ros::param::param("ec_min_cluster_size", min_cluster_size, 10);
-        ros::param::param("ec_max_cluster_size", max_cluster_size, 10000);
-
-        pcl::EuclideanClusterExtraction<PointC> euclid;
-        euclid.setInputCloud(cloud);
-        euclid.setClusterTolerance(cluster_tolerance);
-        euclid.setMinClusterSize(min_cluster_size);
-        euclid.setMaxClusterSize(max_cluster_size);
-        euclid.extract(*indices);
-
+        // Euclid(cloud, indices);
+        // RegionGrowing(cloud, indices);
+        ColorRegionGrowing(cloud, indices);
         // Find the size of the smallest and the largest object,
         // where size = number of points in the cluster
         size_t min_size = std::numeric_limits<size_t>::max();
@@ -82,8 +80,8 @@ namespace perception
     }
 
     void Segmenter::GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                                   geometry_msgs::Pose *pose,
-                                   geometry_msgs::Vector3 *dimensions)
+                                              geometry_msgs::Pose *pose,
+                                              geometry_msgs::Vector3 *dimensions)
     {
         Eigen::Vector4f min_pt, max_pt;
         pcl::getMinMax3D(*cloud, min_pt, max_pt);
@@ -104,8 +102,82 @@ namespace perception
     //  cloud: The point cloud with the bin and the objects in it.
     //  objects: The output objects.
     void Segmenter::SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                              std::vector<Object>* objects) {
+                                   std::vector<Object> *objects)
+    {
+    }
 
+    void Segmenter::Euclid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                           std::vector<pcl::PointIndices> *indices)
+    {
+        double cluster_tolerance;
+        int min_cluster_size, max_cluster_size;
+        ros::param::param("ec_cluster_tolerance", cluster_tolerance, 0.01);
+        ros::param::param("ec_min_cluster_size", min_cluster_size, 10);
+        ros::param::param("ec_max_cluster_size", max_cluster_size, 10000);
+        pcl::EuclideanClusterExtraction<PointC> euclid;
+        euclid.setInputCloud(cloud);
+        euclid.setClusterTolerance(cluster_tolerance);
+        euclid.setMinClusterSize(min_cluster_size);
+        euclid.setMaxClusterSize(max_cluster_size);
+        euclid.extract(*indices);
+    }
+
+    void Segmenter::RegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices)
+    {
+        int min_cluster_size, max_cluster_size, num_of_neighbors, k_search;
+        double smoothness_threshold, urvature_threshold;
+        ros::param::param("reg_min_cluster_size", min_cluster_size, 10);
+        ros::param::param("reg_max_cluster_size", max_cluster_size, 10000);
+        ros::param::param("reg_k_search", k_search, 50);
+        ros::param::param("reg_num_of_neighbors", num_of_neighbors, 30);
+        ros::param::param("reg_smoothness_threshold", smoothness_threshold, 3.0);
+        ros::param::param("reg_curvature_threshold", urvature_threshold, 1.0);
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::copyPointCloud(*cloud, *cloud_xyz);
+
+        pcl::search::Search<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+        pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normal_estimator;
+        normal_estimator.setSearchMethod(tree);
+        normal_estimator.setInputCloud(cloud_xyz);
+        normal_estimator.setKSearch(k_search);
+        normal_estimator.compute(*normals);
+
+        pcl::RegionGrowing<pcl::PointXYZ, pcl::Normal> reg;
+        reg.setMinClusterSize(min_cluster_size);
+        reg.setMaxClusterSize(max_cluster_size);
+        reg.setSearchMethod(tree);
+        reg.setNumberOfNeighbours(num_of_neighbors);
+        reg.setInputCloud(cloud_xyz);
+        reg.setInputNormals(normals);
+        reg.setSmoothnessThreshold(smoothness_threshold / 180.0 * M_PI);
+        reg.setCurvatureThreshold(urvature_threshold);
+
+        reg.extract(*indices);
+    }
+
+    void Segmenter::ColorRegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices)
+    {
+        int min_cluster_size, max_cluster_size, num_of_neighbors, distance_threshold, point_color_thrshold, region_color_threshold;
+        ros::param::param("reg_min_cluster_size", min_cluster_size, 10);
+        ros::param::param("reg_max_cluster_size", max_cluster_size, 10000);
+        ros::param::param("reg_distance_threshold", distance_threshold, 10);
+        ros::param::param("reg_num_of_neighbors", num_of_neighbors, 30);
+        ros::param::param("reg_point_color_thrshold", point_color_thrshold, 6);
+        ros::param::param("reg_region_color_threshold", region_color_threshold, 5);
+
+        pcl::search::Search<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
+        pcl::RegionGrowingRGB<pcl::PointXYZRGB> reg;
+        reg.setMinClusterSize(min_cluster_size);
+        reg.setMaxClusterSize(max_cluster_size);
+        reg.setSearchMethod(tree);
+        reg.setNumberOfNeighbours(num_of_neighbors);
+        reg.setInputCloud(cloud);
+        reg.setDistanceThreshold(distance_threshold);
+        reg.setPointColorThreshold(point_color_thrshold);
+        reg.setRegionColorThreshold(region_color_threshold);
+        reg.extract(*indices);
     }
 
 } // namespace perception

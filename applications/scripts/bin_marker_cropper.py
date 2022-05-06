@@ -7,7 +7,7 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 from geometry_msgs.msg import PoseStamped
 
 CENTER_SMALL = [-0.02, -0.1, -0.03, +0.5, +0.03, +0.1]
-UPPER_SMALL = [-0.02, -0.1, -0.13, +0.5, +0.03, +0.2]
+UPPER_SMALL = [-0.02, -0.1, 0.07, +0.5, +0.03, +0.2]
 
 
 def wait_for_time():
