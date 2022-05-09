@@ -166,12 +166,24 @@ target_link_libraries(perception_downsampler ${catkin_LIBRARIES})
 
 ## for perception segmentation
 add_library(perception_segmentation src/segmentation.cpp)
-add_dependencies(perception_segmentation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(perception_segmentation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} perception_object_recognizer perception_feature_extraction)
 target_link_libraries(perception_segmentation ${catkin_LIBRARIES})
+
+## for feature extraction
+add_library(perception_feature_extraction src/feature_extraction.cpp)
+add_dependencies(perception_feature_extraction ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(perception_feature_extraction ${catkin_LIBRARIES})
+
+## for object recognition
+add_library(perception_object_recognizer src/object_recognizer.cpp)
+add_dependencies(perception_object_recognizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(perception_object_recognizer ${catkin_LIBRARIES})
 
 add_executable(perception_point_cloud_demo src/point_cloud_demo.cpp)
 set_target_properties(perception_point_cloud_demo PROPERTIES OUTPUT_NAME point_cloud_demo PREFIX "")
-add_dependencies(perception_point_cloud_demo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(perception_point_cloud_demo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} perception_object_recognizer )
+# add_dependencies(perception_point_cloud_demo ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 target_link_libraries(perception_point_cloud_demo
   perception_crop
   perception_downsampler

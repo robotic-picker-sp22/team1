@@ -12,6 +12,9 @@
 #include "perception/object.h"
 #include <iostream>
 #include <vector>
+#include <math.h>
+#include <sstream>
+#include "perception/object_recognizer.h"
 
 #include <pcl/search/search.h>
 #include <pcl/search/kdtree.h>
@@ -24,37 +27,68 @@ typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
 namespace perception
 {
-    Segmenter::Segmenter(const ros::Publisher &points_pub, const ros::Publisher &marker_pub)
-        : points_pub_(points_pub), marker_pub_(marker_pub) {}
+    Segmenter::Segmenter(const ros::Publisher &points_pub, const ros::Publisher &marker_pub,
+                         const ObjectRecognizer& recognizer)
+        : points_pub_(points_pub), marker_pub_(marker_pub), recognizer_(recognizer) {}
 
     void Segmenter::Callback(const sensor_msgs::PointCloud2 &msg)
     {
+        PointCloudC::Ptr cloud_unfiltered(new PointCloudC());
+        pcl::fromROSMsg(msg, *cloud_unfiltered);
         PointCloudC::Ptr cloud(new PointCloudC());
-        pcl::fromROSMsg(msg, *cloud);
-        std::vector<pcl::PointIndices> object_indices;
-        SegmentBinObjects(cloud, &object_indices);
-        for (size_t i = 0; i < object_indices.size(); ++i)
-        {
-            // Reify indices into a point cloud of the object.
-            pcl::PointIndices::Ptr indices(new pcl::PointIndices);
-            *indices = object_indices[i];
-            PointCloudC::Ptr object_cloud(new PointCloudC());
-            pcl::ExtractIndices<PointC> extract;
-            extract.setInputCloud(cloud);
-            extract.setIndices(indices);
-            extract.filter(*object_cloud);
+        std::vector<int> index;
+        pcl::removeNaNFromPointCloud(*cloud_unfiltered, *cloud, index);
 
+        // std::vector<pcl::PointIndices> object_indices;
+        // SegmentBinObjects(cloud, &object_indices);
+
+        std::vector<Object> objects;
+        SegmentObjects(cloud, &objects);
+
+        for (size_t i = 0; i < objects.size(); ++i)
+        {
+            const Object& object = objects[i];
+            
             // Publish a bounding box around it.
             visualization_msgs::Marker object_marker;
             object_marker.ns = "objects";
             object_marker.id = i;
             object_marker.header.frame_id = "base_link";
             object_marker.type = visualization_msgs::Marker::CUBE;
-            GetAxisAlignedBoundingBox(object_cloud, &object_marker.pose,
-                                      &object_marker.scale);
+            object_marker.pose = object.pose;
+            object_marker.scale = object.dimensions;
             object_marker.color.g = 1;
             object_marker.color.a = 0.3;
             marker_pub_.publish(object_marker);
+
+            // Recognize the object.
+            std::string name;
+            double confidence;
+            // TODO: recognize the object with the recognizer_.
+            recognizer_.Recognize(object, &name, &confidence);
+            double confidence = round(1000 * confidence) / 1000;
+
+            std::stringstream ss;
+            ss << name << " (" << confidence << ")";
+
+            // Publish the recognition result.
+            visualization_msgs::Marker name_marker;
+            name_marker.ns = "recognition";
+            name_marker.id = i;
+            name_marker.header.frame_id = "base_link";
+            name_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+            name_marker.pose.position = object.pose.position;
+            name_marker.pose.position.z += 0.1;
+            name_marker.pose.orientation.w = 1;
+            name_marker.scale.x = 0.025;
+            name_marker.scale.y = 0.025;
+            name_marker.scale.z = 0.025;
+            name_marker.color.r = 0;
+            name_marker.color.g = 0;
+            name_marker.color.b = 1.0;
+            name_marker.color.a = 1.0;
+            name_marker.text = ss.str();
+            marker_pub_.publish(name_marker);
         }
     }
 
@@ -104,6 +138,21 @@ namespace perception
     void Segmenter::SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                                    std::vector<Object> *objects)
     {
+        std::vector<pcl::PointIndices> object_indices;
+        SegmentBinObjects(cloud, &object_indices);
+        for (size_t i = 0; i < object_indices.size(); ++i)
+        {
+            // Reify indices into a point cloud of the object.
+            pcl::PointIndices::Ptr indices(new pcl::PointIndices);
+            *indices = object_indices[i];
+            PointCloudC::Ptr object_cloud(new PointCloudC());
+            pcl::ExtractIndices<PointC> extract;
+            extract.setInputCloud(cloud);
+            extract.setIndices(indices);
+            extract.filter(*object_cloud);
+            ////////////////////////////////////////////////
+            objects->push_back();
+        }
     }
 
     void Segmenter::Euclid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
