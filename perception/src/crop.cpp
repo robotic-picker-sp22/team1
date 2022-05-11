@@ -1,4 +1,3 @@
-// TODO: add includes, etc.
 #include "perception/crop.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl/filters/crop_box.h"

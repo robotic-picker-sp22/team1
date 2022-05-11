@@ -20,7 +20,6 @@ namespace perception {
 namespace {
 double EuclideanDistance(const std::vector<double>& v1,
                          const std::vector<double>& v2) {
-  // TODO: implement
   double sum = 0.0;
   for (int i = 0; i < v1.size(); i++) {
       sum += pow((v1[i] - v2[i]), 2);
@@ -55,16 +54,15 @@ ObjectRecognizer::ObjectRecognizer(const std::vector<ObjectFeatures>& dataset)
 
 void ObjectRecognizer::Recognize(const Object& object, std::string* name,
                                  double* confidence) {
-  // TODO: extract features from the object
   perception_msgs::ObjectFeatures input_features = perception_msgs::ObjectFeatures();
   perception_msgs::ObjectFeatures* input_features_ptr = &input_features;
 
-  ExtractSizeFeatures(object, input_features_ptr);
+  ExtractFeatures(object, input_features_ptr);
 
   double min_distance = std::numeric_limits<double>::max();
   double second_min_distance = std::numeric_limits<double>::max();
   for (size_t i = 0; i < dataset_.size(); ++i) {
-    // TODO: compare the features of the input object to the features of the current dataset object.
+    // compare the features of the input object to the features of the current dataset object.
     double distance = EuclideanDistance(input_features.values, dataset_[i].values);
 
     if (distance < min_distance) {
