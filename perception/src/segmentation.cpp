@@ -61,14 +61,8 @@ namespace perception
             object_marker.color.a = 0.3;
             marker_pub_.publish(object_marker);
 
-            // Recognize the object.
-            std::string name;
-            double confidence;
-            recognizer_.Recognize(object, &name, &confidence);
-            confidence = round(1000 * confidence) / 1000;
-
             std::stringstream ss;
-            ss << name << " (" << confidence << ")";
+            ss << object.name << " (" << object.confidence << ")";
 
             // Publish the recognition result.
             visualization_msgs::Marker name_marker;
@@ -149,9 +143,22 @@ namespace perception
             extract.setInputCloud(cloud);
             extract.setIndices(indices);
             extract.filter(*object_cloud);
-            ////////////////////////////////////////////////
-            // TODO: Should this be pushed back an Object Cloud or what?
-            // objects->push_back();
+
+            // Create an object from the object cloud.
+            Object object = Object();
+            GetAxisAlignedBoundingBox(object_cloud, &object.pose, &object.dimensions);
+            object.cloud = object_cloud;
+
+            // Recognize the object.
+            std::string name;
+            double confidence;
+            recognizer_.Recognize(object, &name, &confidence);
+            confidence = round(1000 * confidence) / 1000;
+
+            object.name = name;
+            object.confidence = confidence;
+
+            objects->push_back(object);
         }
     }
 
