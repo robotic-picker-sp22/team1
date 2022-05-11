@@ -56,6 +56,7 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <depend>rosbag</depend>
+  <depend>perception_msgs</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

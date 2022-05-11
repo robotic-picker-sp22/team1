@@ -10,7 +10,7 @@ namespace perception {
 void ExtractSizeFeatures(const perception::Object& object,
                          perception_msgs::ObjectFeatures* features) {
   double weight;
-  ros::param("size_weight", weight, 2.0);
+  ros::param::param("size_weight", weight, 2.0);
   // "x" dimension is always the smallest of x and y to account for rotations.
   // z always points up.
   float x = fmin(object.dimensions.x, object.dimensions.y);

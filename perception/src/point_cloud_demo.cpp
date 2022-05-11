@@ -39,8 +39,8 @@ int main(int argc, char **argv)
     std::vector<perception_msgs::ObjectFeatures> dataset;
     perception::LoadData(data_dir, &dataset);
     perception::ObjectRecognizer recognizer(dataset);
-    
-    perception::Segmenter segmenter(segment_pub, marker_pub);
+
+    perception::Segmenter segmenter(segment_pub, marker_pub, recognizer);
     ros::Subscriber sub_segmenter =
         nh.subscribe("cropped_cloud", 1, &perception::Segmenter::Callback, &segmenter);
 

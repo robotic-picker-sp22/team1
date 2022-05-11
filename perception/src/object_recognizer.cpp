@@ -8,6 +8,7 @@
 #include "boost/filesystem.hpp"
 #include "rosbag/bag.h"
 #include "rosbag/view.h"
+#include "perception/object.h"
 #include "perception/feature_extraction.h"
 #include "perception_msgs/ObjectFeatures.h"
 #include "ros/ros.h"
@@ -56,7 +57,9 @@ void ObjectRecognizer::Recognize(const Object& object, std::string* name,
                                  double* confidence) {
   // TODO: extract features from the object
   perception_msgs::ObjectFeatures input_features = perception_msgs::ObjectFeatures();
-  perception::ExtractSizeFeatures(object, &input_features);
+  perception_msgs::ObjectFeatures* input_features_ptr = &input_features;
+
+  ExtractSizeFeatures(object, input_features_ptr);
 
   double min_distance = std::numeric_limits<double>::max();
   double second_min_distance = std::numeric_limits<double>::max();

@@ -48,7 +48,7 @@ namespace perception
         for (size_t i = 0; i < objects.size(); ++i)
         {
             const Object& object = objects[i];
-            
+
             // Publish a bounding box around it.
             visualization_msgs::Marker object_marker;
             object_marker.ns = "objects";
@@ -64,9 +64,8 @@ namespace perception
             // Recognize the object.
             std::string name;
             double confidence;
-            // TODO: recognize the object with the recognizer_.
             recognizer_.Recognize(object, &name, &confidence);
-            double confidence = round(1000 * confidence) / 1000;
+            confidence = round(1000 * confidence) / 1000;
 
             std::stringstream ss;
             ss << name << " (" << confidence << ")";
@@ -151,7 +150,8 @@ namespace perception
             extract.setIndices(indices);
             extract.filter(*object_cloud);
             ////////////////////////////////////////////////
-            objects->push_back();
+            // TODO: Should this be pushed back an Object Cloud or what?
+            // objects->push_back();
         }
     }
 
