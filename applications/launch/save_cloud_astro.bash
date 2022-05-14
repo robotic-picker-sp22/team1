@@ -18,7 +18,7 @@ function setrobot() {
 }
 
 setrobot astro-1
-rosrun perception save_cloud tags-5
-mv tags-5.bag ~/data/
+rosrun perception save_cloud tags-7
+mv tags-7.bag ~/data/
 setrobot sim
-rosrun applications publish_saved_cloud.py /home/capstone/data/tags-5.bag
+rosrun applications publish_saved_cloud.py /home/capstone/data/tags-7.bag

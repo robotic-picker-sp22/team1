@@ -181,13 +181,13 @@ namespace perception
     void RegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices)
     {
         int min_cluster_size, max_cluster_size, num_of_neighbors, k_search;
-        double smoothness_threshold, urvature_threshold;
+        double smoothness_threshold, curvature_threshold;
         ros::param::param("reg_min_cluster_size", min_cluster_size, 10);
         ros::param::param("reg_max_cluster_size", max_cluster_size, 10000);
         ros::param::param("reg_k_search", k_search, 50);
         ros::param::param("reg_num_of_neighbors", num_of_neighbors, 30);
         ros::param::param("reg_smoothness_threshold", smoothness_threshold, 3.0);
-        ros::param::param("reg_curvature_threshold", urvature_threshold, 1.0);
+        ros::param::param("reg_curvature_threshold", curvature_threshold, 1.0);
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::copyPointCloud(*cloud, *cloud_xyz);
@@ -208,18 +208,17 @@ namespace perception
         reg.setInputCloud(cloud_xyz);
         reg.setInputNormals(normals);
         reg.setSmoothnessThreshold(smoothness_threshold / 180.0 * M_PI);
-        reg.setCurvatureThreshold(urvature_threshold);
+        reg.setCurvatureThreshold(curvature_threshold);
 
         reg.extract(*indices);
     }
 
     void ColorRegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices)
     {
-        int min_cluster_size, max_cluster_size, num_of_neighbors, distance_threshold, point_color_thrshold, region_color_threshold;
+        int min_cluster_size, max_cluster_size, distance_threshold, point_color_thrshold, region_color_threshold;
         ros::param::param("reg_min_cluster_size", min_cluster_size, 10);
         ros::param::param("reg_max_cluster_size", max_cluster_size, 10000);
         ros::param::param("reg_distance_threshold", distance_threshold, 10);
-        ros::param::param("reg_num_of_neighbors", num_of_neighbors, 30);
         ros::param::param("reg_point_color_thrshold", point_color_thrshold, 6);
         ros::param::param("reg_region_color_threshold", region_color_threshold, 5);
 
@@ -228,7 +227,6 @@ namespace perception
         reg.setMinClusterSize(min_cluster_size);
         reg.setMaxClusterSize(max_cluster_size);
         reg.setSearchMethod(tree);
-        reg.setNumberOfNeighbours(num_of_neighbors);
         reg.setInputCloud(cloud);
         reg.setDistanceThreshold(distance_threshold);
         reg.setPointColorThreshold(point_color_thrshold);
