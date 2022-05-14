@@ -11,6 +11,23 @@
 
 namespace perception
 {
+    void SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                            std::vector<pcl::PointIndices> *indices);
+    void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                                    geometry_msgs::Pose *pose,
+                                    geometry_msgs::Vector3 *dimensions);
+
+    // Does a complete bin segmentation pipeline.
+    //
+    // Args:
+    //  cloud: The point cloud with the bin and the objects in it.
+    //  objects: The output objects.
+    void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                        std::vector<Object> *objects);
+    void Euclid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                std::vector<pcl::PointIndices> *indices);
+    void RegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices);
+    void ColorRegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices);
 
     // Add function definitions here later
 
@@ -20,23 +37,6 @@ namespace perception
         Segmenter(const ros::Publisher &points_pub, const ros::Publisher &marker_pub,
                   const ObjectRecognizer& recognizer);
         void Callback(const sensor_msgs::PointCloud2 &msg);
-        void SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                               std::vector<pcl::PointIndices> *indices);
-        void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                                       geometry_msgs::Pose *pose,
-                                       geometry_msgs::Vector3 *dimensions);
-
-        // Does a complete bin segmentation pipeline.
-        //
-        // Args:
-        //  cloud: The point cloud with the bin and the objects in it.
-        //  objects: The output objects.
-        void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                            std::vector<Object> *objects);
-        void Euclid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                    std::vector<pcl::PointIndices> *indices);
-        void RegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices);
-        void ColorRegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices);
 
     private:
         ros::Publisher points_pub_;

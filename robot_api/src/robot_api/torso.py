@@ -21,7 +21,6 @@ class Torso(object):
             ACTION_NAME, FollowJointTrajectoryAction
         )
         self.client.wait_for_server()
-        rospy.loginfo("torso client initialized")
 
     def set_height(self, height):
         """Sets the torso height.
@@ -41,4 +40,5 @@ class Torso(object):
         )
 
         self.client.send_goal_and_wait(goal)
+        rospy.loginfo("torso height change finished")
         return self.client.get_result()

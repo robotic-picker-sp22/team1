@@ -8,6 +8,7 @@ from geometry_msgs.msg import PoseStamped
 
 CENTER_SMALL = [-0.02, -0.1, -0.03, +0.5, +0.03, +0.1]
 UPPER_SMALL = [-0.02, -0.1, 0.07, +0.5, +0.03, +0.2]
+BOTTOM_BIG = [-0.02, 0, -0.2, 0.5, -0.2, -0.1]
 
 
 def wait_for_time():

@@ -47,7 +47,16 @@ namespace perception
 
         for (size_t i = 0; i < objects.size(); ++i)
         {
-            const Object& object = objects[i];
+            Object& object = objects[i];
+
+            // Recognize the object.
+            std::string name;
+            double confidence;
+            recognizer_.Recognize(object, &name, &confidence);
+            confidence = round(1000 * confidence) / 1000;
+
+            object.name = name;
+            object.confidence = confidence;
 
             // Publish a bounding box around it.
             visualization_msgs::Marker object_marker;
@@ -85,7 +94,7 @@ namespace perception
         }
     }
 
-    void Segmenter::SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+    void SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                                       std::vector<pcl::PointIndices> *indices)
     {
         // Euclid(cloud, indices);
@@ -106,7 +115,7 @@ namespace perception
                  indices->size(), min_size, max_size);
     }
 
-    void Segmenter::GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+    void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                                               geometry_msgs::Pose *pose,
                                               geometry_msgs::Vector3 *dimensions)
     {
@@ -128,7 +137,7 @@ namespace perception
     // Args:
     //  cloud: The point cloud with the bin and the objects in it.
     //  objects: The output objects.
-    void Segmenter::SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+    void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                                    std::vector<Object> *objects)
     {
         std::vector<pcl::PointIndices> object_indices;
@@ -149,20 +158,11 @@ namespace perception
             GetAxisAlignedBoundingBox(object_cloud, &object.pose, &object.dimensions);
             object.cloud = object_cloud;
 
-            // Recognize the object.
-            std::string name;
-            double confidence;
-            recognizer_.Recognize(object, &name, &confidence);
-            confidence = round(1000 * confidence) / 1000;
-
-            object.name = name;
-            object.confidence = confidence;
-
             objects->push_back(object);
         }
     }
 
-    void Segmenter::Euclid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+    void Euclid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                            std::vector<pcl::PointIndices> *indices)
     {
         double cluster_tolerance;
@@ -178,7 +178,7 @@ namespace perception
         euclid.extract(*indices);
     }
 
-    void Segmenter::RegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices)
+    void RegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices)
     {
         int min_cluster_size, max_cluster_size, num_of_neighbors, k_search;
         double smoothness_threshold, urvature_threshold;
@@ -213,7 +213,7 @@ namespace perception
         reg.extract(*indices);
     }
 
-    void Segmenter::ColorRegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices)
+    void ColorRegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices)
     {
         int min_cluster_size, max_cluster_size, num_of_neighbors, distance_threshold, point_color_thrshold, region_color_threshold;
         ros::param::param("reg_min_cluster_size", min_cluster_size, 10);

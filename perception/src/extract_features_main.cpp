@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
   Crop(pcl_cloud, cropped_cloud);
 
   std::vector<perception::Object> objects;
-  perception::SegmentTabletopScene(cropped_cloud, &objects);
+  perception::SegmentObjects(cropped_cloud, &objects);
   if (objects.size() != 1) {
     std::cerr << "Expected to see exactly one object, found " << objects.size()
               << std::endl;

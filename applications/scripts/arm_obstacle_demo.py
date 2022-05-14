@@ -40,7 +40,7 @@ def add_obstacles(planning_scene):
 
 
 def main():
-    rospy.init_node('arm_demo')
+    rospy.init_node('arm_obstable_demo')
     wait_for_time()
     planning_scene = PlanningSceneInterface('base_link')
     add_obstacles(planning_scene)

@@ -34,6 +34,7 @@ int main(int argc, char **argv)
     // for segmentation
     ros::Publisher segment_pub = nh.advertise<sensor_msgs::PointCloud2>("segment_cloud", 1, true);
     ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("segment_marker", 1, true);
+    
     // add object recognition functionality
     // Create the object recognizer.
     std::vector<perception_msgs::ObjectFeatures> dataset;
