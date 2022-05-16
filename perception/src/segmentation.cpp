@@ -44,6 +44,7 @@ namespace perception
 
         std::vector<Object> objects;
         SegmentObjects(cloud, &objects);
+        std::cout << "HEYYYYYYYYYYYYYYYYY" << std::endl;
 
         for (size_t i = 0; i < objects.size(); ++i)
         {
@@ -68,6 +69,7 @@ namespace perception
             object_marker.scale = object.dimensions;
             object_marker.color.g = 1;
             object_marker.color.a = 0.3;
+            std::cout << "Object name is:" << object.pose.position.x << std::endl;
             marker_pub_.publish(object_marker);
 
             std::stringstream ss;
@@ -97,9 +99,9 @@ namespace perception
     void SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                                       std::vector<pcl::PointIndices> *indices)
     {
-        // Euclid(cloud, indices);
+        Euclid(cloud, indices);
         // RegionGrowing(cloud, indices);
-        ColorRegionGrowing(cloud, indices);
+        // ColorRegionGrowing(cloud, indices);
         // Find the size of the smallest and the largest object,
         // where size = number of points in the cluster
         size_t min_size = std::numeric_limits<size_t>::max();
