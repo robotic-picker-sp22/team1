@@ -12,7 +12,7 @@ void print_usage()
   std::cout << "Saves a point cloud on head_camera/depth_registered/points to "
                "NAME.bag in the current directory."
             << std::endl;
-  std::cout << "Usage: rosrun perception save_cloud NAME" << std::endl;
+  std::cout << "Usage: rosrun perception save_cloud NAME <topic>" << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -23,11 +23,14 @@ int main(int argc, char **argv)
     print_usage();
     return 1;
   }
+  std::string topic("head_camera/depth_registered/points");
   std::string name(argv[1]);
-
+  if (argc > 2) {
+    topic = argv[2];
+  }
+  std::cout << topic << std::endl;
   sensor_msgs::PointCloud2ConstPtr cloud =
-      ros::topic::waitForMessage<sensor_msgs::PointCloud2>(
-          "head_camera/depth_registered/points");
+      ros::topic::waitForMessage<sensor_msgs::PointCloud2>(topic);
 
   tf::TransformListener tf_listener;
   tf_listener.waitForTransform("base_link", cloud->header.frame_id,
