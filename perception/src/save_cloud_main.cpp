@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     topic = argv[2];
   }
   std::cout << topic << std::endl;
-  sensor_msgs::PointCloud2ConstPtr cloud =
+  sensor_msgs::PointCloud2ConstPtr  cloud =
       ros::topic::waitForMessage<sensor_msgs::PointCloud2>(topic);
 
   tf::TransformListener tf_listener;
