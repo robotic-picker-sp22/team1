@@ -7,3 +7,5 @@ cmake*/
 **/.idea/
 
 **/tmp_annotator_data/**
+
+*.prog.pkl
