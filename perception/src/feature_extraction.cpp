@@ -10,17 +10,17 @@ namespace perception {
 void ExtractSizeFeatures(const perception::Object& object,
                          perception_msgs::ObjectFeatures* features) {
   double weight;
-  ros::param::param("size_weight", weight, 2.0);
+  ros::param::param("size_weight", weight, 1.15);
   // "x" dimension is always the smallest of x and y to account for rotations.
   // z always points up.
-  float x = fmin(object.dimensions.x, object.dimensions.y);
-  float y = fmax(object.dimensions.x, object.dimensions.y);
   features->names.push_back("box_dim_x");
-  features->values.push_back(x);
+  features->values.push_back(
+      weight * std::min(object.dimensions.x, object.dimensions.y));
   features->names.push_back("box_dim_y");
-  features->values.push_back(y);
+  features->values.push_back(
+      weight * std::max(object.dimensions.x, object.dimensions.y));
   features->names.push_back("box_dim_z");
-  features->values.push_back(object.dimensions.z);
+  features->values.push_back(weight * object.dimensions.z);
 }
 
 void ExtractColorFeatures(const Object& object,

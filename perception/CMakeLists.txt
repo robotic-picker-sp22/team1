@@ -108,7 +108,7 @@ catkin_python_setup()
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES perception_awesome_algorithm
+  # LIBRARIES perception_awesome_algorithm
   CATKIN_DEPENDS roscpp rospy
 #  DEPENDS system_lib
 )
@@ -125,16 +125,16 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(perception_awesome_algorithm src/awesome_algorithm.cpp)
+# add_library(perception_awesome_algorithm src/awesome_algorithm.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(perception_awesome_algorithm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(perception_awesome_algorithm ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(perception_awesome_algorithm
-   ${catkin_LIBRARIES}
-)
+# target_link_libraries(perception_awesome_algorithm
+#    ${catkin_LIBRARIES}
+# )
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

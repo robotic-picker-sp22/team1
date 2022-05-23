@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import math
 
 import rospy
 import tf2_geometry_msgs
@@ -24,11 +25,12 @@ class ArTagReader(object):
         self.markers = msg.markers
 
 
-def bin_marker_crop(reader, bin_offset, marker_id=0):
+def bin_marker_crop(reader, bin_offset, marker_id=15):
     rate = rospy.Rate(10)
 
     while not rospy.is_shutdown():
         if len(reader.markers) == 0:
+            rospy.loginfo("no marker")
             rate.sleep()
             continue
         marker = next(filter(lambda m: m.id == marker_id, reader.markers))  # maybe support cropping multiple markers
@@ -65,6 +67,7 @@ UPPER_SMALL = [-0.02, -0.1, 0.07, +0.5, +0.03, +0.2]  # 4
 BOTTOM_BIG = [-0.02, 0.02, -0.35, 0.5, 0.5, -0.15]  # 3
 MID_BIG = [-0.02, 0.02, -0.15, 0.5, 0.5, 0.05]  # 2
 UPPER_BIG = [-0.02, 0.02, 0.05, 0.5, 0.5, 0.2]  # 1, 5
+WHOLE = [-0.02, -1, -2, 0.1, 0.02, 0.05]
 
 
 def main():
@@ -74,7 +77,7 @@ def main():
     reader = ArTagReader()
     rospy.Subscriber("/ar_pose_marker", AlvarMarkers, callback=reader.callback, queue_size=1)
 
-    bin_marker_crop(reader, BOTTOM_BIG)
+    bin_marker_crop(reader, WHOLE)
 
 
 if __name__ == '__main__':
