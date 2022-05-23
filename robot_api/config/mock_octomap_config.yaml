@@ -1,0 +1,9 @@
+sensors:
+  - sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
+    # point_cloud_topic: /head_camera/depth_downsample/points
+    point_cloud_topic: /mock_point_cloud
+    max_range: 1.5
+    point_subsample: 1
+    padding_offset: 0.05
+    padding_scale: 1.0
+    filtered_cloud_topic: mock_point_cloud_filtered
