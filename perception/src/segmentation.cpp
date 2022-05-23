@@ -107,6 +107,10 @@ namespace perception
             name_marker.color.a = 1.0;
             name_marker.text = ss.str();
             marker_pub_.publish(name_marker);
+
+            sensor_msgs::PointCloud2 segmented_msg;
+            pcl::toROSMsg(*object.cloud, segmented_msg);
+            points_pub_.publish(segmented_msg);
         }
     }
 
