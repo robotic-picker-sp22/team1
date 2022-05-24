@@ -8,6 +8,7 @@ project(perception_msgs)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  std_msgs
   message_generation
   message_runtime
 )
@@ -49,6 +50,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
     FILES
     ObjectFeatures.msg
+    PCLIndices.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -67,7 +69,7 @@ add_message_files(
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
-  DEPENDENCIES
+  DEPENDENCIES std_msgs
 )
 
 ################################################

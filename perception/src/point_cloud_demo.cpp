@@ -5,6 +5,7 @@
 #include "perception/segmentation.h"
 #include "perception/object_recognizer.h"
 #include "perception_msgs/ObjectFeatures.h"
+#include "perception_msgs/PCLIndices.h"
 #include "ros/ros.h"
 #include "sensor_msgs/PointCloud2.h"
 #include "visualization_msgs/Marker.h"
@@ -33,15 +34,16 @@ int main(int argc, char **argv)
 
     // for segmentation
     ros::Publisher segment_pub = nh.advertise<sensor_msgs::PointCloud2>("segment_cloud", 1, true);
+    ros::Publisher indices_pub = nh.advertise<perception_msgs::PCLIndices>("segment_indices", 1, true);
     ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("segment_marker", 1, true);
-    
+
     // add object recognition functionality
     // Create the object recognizer.
     std::vector<perception_msgs::ObjectFeatures> dataset;
     perception::LoadData(data_dir, &dataset);
     perception::ObjectRecognizer recognizer(dataset);
 
-    perception::Segmenter segmenter(segment_pub, marker_pub, recognizer);
+    perception::Segmenter segmenter(segment_pub, indices_pub, marker_pub, recognizer);
     ros::Subscriber sub_segmenter =
         nh.subscribe("cropped_cloud", 1, &perception::Segmenter::Callback, &segmenter);
     std::cout << "444444444444444444444" << std::endl;

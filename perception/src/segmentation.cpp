@@ -27,9 +27,9 @@ typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
 namespace perception
 {
-    Segmenter::Segmenter(const ros::Publisher &points_pub, const ros::Publisher &marker_pub,
+    Segmenter::Segmenter(const ros::Publisher &points_pub, const ros::Publisher &indices_pub, const ros::Publisher &marker_pub,
                          const ObjectRecognizer &recognizer)
-        : points_pub_(points_pub), marker_pub_(marker_pub), recognizer_(recognizer) {}
+        : points_pub_(points_pub), indices_pub_(indices_pub), marker_pub_(marker_pub), recognizer_(recognizer) {}
 
     void Segmenter::Callback(const sensor_msgs::PointCloud2 &msg)
     {
@@ -48,7 +48,8 @@ namespace perception
         // SegmentBinObjects(cloud, &object_indices);
 
         std::vector<Object> objects;
-        SegmentObjects(cloud, &objects);
+        std::vector<pcl::PointIndices::Ptr> object_indices;
+        SegmentObjects(cloud, &objects, &object_indices);
 
         for (size_t i = 0; i < objects.size(); ++i)
         {
@@ -158,7 +159,7 @@ namespace perception
     //  cloud: The point cloud with the bin and the objects in it.
     //  objects: The output objects.
     void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                        std::vector<Object> *objects)
+                        std::vector<Object> *objects, std::vector<pcl::PointIndices::Ptr> *indices)
     {
         std::vector<pcl::PointIndices> object_indices;
         SegmentBinObjects(cloud, &object_indices);
