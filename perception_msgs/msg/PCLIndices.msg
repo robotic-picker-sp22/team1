@@ -1,2 +1,2 @@
 Header header
-uint32[] indices
+uint64[] indices

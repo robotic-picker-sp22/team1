@@ -10,6 +10,7 @@
 #include <pcl/common/common.h>
 #include "pcl/filters/extract_indices.h"
 #include "perception/object.h"
+#include "perception_msgs/PCLIndices.h"
 #include <iostream>
 #include <vector>
 #include <math.h>
@@ -113,6 +114,19 @@ namespace perception
             pcl::toROSMsg(*object.cloud, segmented_msg);
             points_pub_.publish(segmented_msg);
         }
+
+        // Publish the indices of the objects.
+        std::vector<unsigned long> all_indices;
+        for (size_t i = 0; i < object_indices.size(); i++)
+        {
+            pcl::Indices cur_indices = object_indices[i]->indices;
+            std::copy(cur_indices.begin(), cur_indices.end(), std::back_inserter(all_indices));
+        }
+
+        perception_msgs::PCLIndices indices_msg = perception_msgs::PCLIndices();
+        indices_msg.header = msg.header;
+        indices_msg.indices = all_indices;
+        indices_pub_.publish(indices_msg);
     }
 
     void SegmentBinObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
