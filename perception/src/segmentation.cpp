@@ -118,8 +118,8 @@ namespace perception
                            std::vector<pcl::PointIndices> *indices)
     {
         // Euclid(cloud, indices);
-        // RegionGrowing(cloud, indices);
-        ColorRegionGrowing(cloud, indices);
+        RegionGrowing(cloud, indices);
+        // ColorRegionGrowing(cloud, indices);
         // Find the size of the smallest and the largest object,
         // where size = number of points in the cluster
         size_t min_size = std::numeric_limits<size_t>::max();
@@ -202,8 +202,8 @@ namespace perception
     {
         int min_cluster_size, max_cluster_size, num_of_neighbors, k_search;
         double smoothness_threshold, curvature_threshold, residual_threshold;
-        ros::param::param("reg_min_cluster_size", min_cluster_size, 10);
-        ros::param::param("reg_max_cluster_size", max_cluster_size, 3500);
+        ros::param::param("reg_min_cluster_size", min_cluster_size, 300);
+        ros::param::param("reg_max_cluster_size", max_cluster_size, 30000);
         ros::param::param("reg_k_search", k_search, 50);
         ros::param::param("reg_num_of_neighbors", num_of_neighbors, 30);
         ros::param::param("reg_smoothness_threshold", smoothness_threshold, 3.0);
