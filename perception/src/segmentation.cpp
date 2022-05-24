@@ -146,8 +146,8 @@ namespace perception
             max_size = std::max(cluster_size, max_size);
         }
 
-        ROS_INFO("Found %ld objects, min size: %ld, max size: %ld",
-                 indices->size(), min_size, max_size);
+        // ROS_INFO("Found %ld objects, min size: %ld, max size: %ld",
+        //          indices->size(), min_size, max_size);
     }
 
     void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
