@@ -82,13 +82,15 @@ class PCFilterSegmentation():
 
                 if key not in self.__last_idx_msgs or key not in self.__last_pcl_msgs:
                     if key not in self.__last_idx_msgs:
-                        rospy.logwarn_throttle(3, "Missing idx message")
+                        pass
+                        # rospy.logwarn_throttle(3, "Missing idx message")
                     if key not in self.__last_pcl_msgs:
-                        rospy.logwarn_throttle(3, "Missing pcl message")
+                        pass
+                        # rospy.logwarn_throttle(3, "Missing pcl message")
                     # Header not found in both messages. Return
                     # But receiving idx msgs
                     if self.__any_idx_msg_received:
-                        rospy.logwarn_throttle(3, "Returning")
+                        # rospy.logwarn_throttle(3, "Returning")
                         return
 
                 # Get original messages
@@ -98,21 +100,25 @@ class PCFilterSegmentation():
                 else:
                     idx_msg = PCLIndices()
 
-        # Convert to pc2 object
-        pc_array = np.array(list(pc2.read_points(pcl_msg)))
+        # If there are indices to filter, do that.
+        # Otherwise republish PC
+        if len(idx_msg.indices) > 0:
+            # Convert to pc2 object
+            pc_array = np.array(list(pc2.read_points(pcl_msg)))
 
-        # Get a filter array; true if not detected as object. false otherwise
-        bool_arr = np.ones(len(pc_array), dtype=bool)
-        bool_arr[idx_msg.indices] = False
+            # Get a filter array; true if not detected as object. false otherwise
+            bool_arr = np.ones(len(pc_array), dtype=bool)
+            bool_arr[idx_msg.indices] = False
+            # Filter pc_array
+            pc_array = pc_array[bool_arr]
 
-        # Filter pc_array
-        pc_array = pc_array[bool_arr]
-
-        new_pc_msg = pc2.create_cloud(
-            header=header,
-            fields=pcl_msg.fields,
-            points=pc_array
-        )
+            new_pc_msg = pc2.create_cloud(
+                header=header,
+                fields=pcl_msg.fields,
+                points=pc_array
+            )
+        else:
+            new_pc_msg = pcl_msg
 
         self.__pub.publish(new_pc_msg)
 
