@@ -32,6 +32,10 @@ class PCFilterSegmentation():
         self.__last_idx_msgs = {}
         self.__last_idx_queue = deque([], self.__MAX_QUEUE_SIZE)
 
+        rospy.logwarn(
+            f"Starting PC Filter Segmentation with topics:\n\t- {input_idx_topic}\n\t- {input_pc_topic}"
+        )
+
         rospy.Subscriber(input_idx_topic, PCLIndices, self.callback_idx)
         rospy.Subscriber(input_pc_topic, PointCloud2, self.callback_pc)
 

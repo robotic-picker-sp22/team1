@@ -1,5 +1,6 @@
 <launch>
   <arg name="data_dir" default="$(find perception)/data/objects/color_labels"/>
+  <arg name="topic" default="/head_camera/depth_registered/points" />
   <param name="ec_cluster_tolerance" value="0.03" />
   <param name="ec_min_cluster_size" value="700" />
   <param name="ec_max_cluster_size" value="7500" />
@@ -20,11 +21,12 @@
   <param name="reg_region_color_threshold" value="10" />
   <param name="reg_residual_threshold" value="0.05" />
   <param name="reg_smoothness_threshold" value="2" />
+
   <node pkg="perception" type="point_cloud_demo" name="point_cloud_demo" args="$(arg data_dir)" output="screen">
     <!-- <remap from="cloud_in" to="mock_point_cloud" /> -->
-    <remap from="cloud_in" to="/head_camera/depth_registered/points" />
+    <remap from="cloud_in" to="$(arg topic)" />
   </node>
-  <node pkg="perception" type="segmentation_filtered_pcl.py" name="segmentation_filtered_pcl">
-    <!-- <param name="input_pc_topic" value="/head_camera/depth_registered/points" /> -->
+  <node pkg="perception" type="segmentation_filtered_pcl.py" name="segmentation_filtered_pcl" output="screen">
+    <param name="input_pc_topic" value="$(arg topic)" />
   </node>
 </launch>
