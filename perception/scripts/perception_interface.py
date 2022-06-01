@@ -15,6 +15,7 @@ class CommandPerceptionInterface:
 
         self.__object_poses = {}
         self.__move_to_publisher = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+        self.__grasp_object_publisher = rospy.Publisher("/gripper_ik/grasp", PoseStamped, queue_size=1)
 
     def rospy_callback_marker(self, marker: Marker):
         pose_stamped = PoseStamped()
@@ -33,7 +34,8 @@ class CommandPerceptionInterface:
             print("No pose saved with name '{}'".format(name))
             return
 
-        self.__move_to_publisher.publish(self.__object_poses[name])
+        self.__grasp_object_publisher.publish(self.__object_poses[name])
+        # self.__move_to_publisher.publish(self.__object_poses[name])
 
     def callback_help(self):
         print(textwrap.dedent(

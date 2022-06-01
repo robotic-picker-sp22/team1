@@ -76,6 +76,9 @@ class GripperTeleop(object):
         self.__tf_listener = tf.TransformListener()
         self.__arm_joints_server = ArmJointsServer()
 
+        rospy.Subscriber("/gripper_ik/go_to", PoseStamped, self.__handle_goto)
+        rospy.Subscriber("/gripper_ik/grasp", PoseStamped, self.grasp_object)
+
     def __get_base_markers(self):
 
         gripper_marker = Marker()
@@ -202,19 +205,20 @@ class GripperTeleop(object):
         if arm_joints is None:
             return False
 
-        if use_raw_joints:
+        # if use_raw_joints:
+        if True:
             self._arm.move_to_joints(arm_joints)
         else:
             pose_tf2 = PoseStampedTF2()
             pose_tf2.header.frame_id = pose.header.frame_id
             pose_tf2.header.stamp = pose.header.stamp
             pose_tf2.pose = pose.pose
-            
+
             # self.__tf_listener.waitForTransform("map", pose_tf2.header.frame_id, pose.header.stamp, rospy.Duration(10))
             # pose_tf2 = self.__tf_listener.transformPose("map", pose_tf2)
             self.__tf_listener.waitForTransform("base_link", pose_tf2.header.frame_id, pose.header.stamp, rospy.Duration(10))
             pose_tf2 = self.__tf_listener.transformPose("base_link", pose_tf2)
-            
+
             rospy.loginfo(self._arm.move_to_pose(
                 pose_tf2,
                 allowed_planning_time=15,
@@ -269,7 +273,7 @@ class GripperTeleop(object):
         # 0. Calculate pre-grasp pose
         object_pose = copy.deepcopy(object_pose)
 
-        
+
         grasp_pose, pos_axis = self.__get_best_grasp_pose(object_pose)
         if grasp_pose is None:
             return
