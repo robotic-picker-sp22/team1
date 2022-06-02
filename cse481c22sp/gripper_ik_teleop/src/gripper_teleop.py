@@ -202,12 +202,12 @@ class GripperTeleop(object):
         if pose is None:
             return False
 
-        arm_joints = self._arm.compute_ik(pose)
-        if arm_joints is None:
-            return False
-
-        # if use_raw_joints:
-        if True:
+        if use_raw_joints:
+        # if True:
+            arm_joints = self._arm.compute_ik(pose)
+            if arm_joints is None:
+                rospy.logwarn("NO IK SOLUTION. Returning")
+                return False
             self._arm.move_to_joints(arm_joints)
         else:
             pose_tf2 = PoseStampedTF2()
