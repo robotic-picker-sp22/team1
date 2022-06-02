@@ -139,8 +139,8 @@ namespace perception
                            std::vector<pcl::PointIndices> *indices)
     {
         // Euclid(cloud, indices);
-        RegionGrowing(cloud, indices);
-        // ColorRegionGrowing(cloud, indices);
+        // RegionGrowing(cloud, indices);
+        ColorRegionGrowing(cloud, indices);
         // Find the size of the smallest and the largest object,
         // where size = number of points in the cluster
         size_t min_size = std::numeric_limits<size_t>::max();

@@ -39,15 +39,15 @@ class ActionExecutor():
         pose.header.stamp = t
         pose = self.__tf_listener.transformPose("base_link", pose)
 
-        # NOTE: May need to uncomment
-        arm_joints = self._arm.compute_ik(pose)
-        if arm_joints is None:
-            return False
+        # # NOTE: May need to uncomment
+        # arm_joints = self._arm.compute_ik(pose)
+        # if arm_joints is None:
+        #     return False
 
         if use_raw_joints:
-            # arm_joints = self._arm.compute_ik(pose)
-            # if arm_joints is None:
-            #     return False
+            arm_joints = self._arm.compute_ik(pose)
+            if arm_joints is None:
+                return False
             self._arm.move_to_joints(arm_joints)
         else:
             pose_tf2 = PoseStampedTF2()
@@ -115,7 +115,7 @@ class ActionSaver():
 
     def __save_pose(self):
         t = rospy.Time.now()
-        pos_link = "gripper_link"
+        pos_link = "wrist_roll_link"
         self.__tf_listener.waitForTransform(pos_link, "base_link", t, rospy.Duration(10))
         position, orientation = self.__tf_listener.lookupTransform("base_link", pos_link, t)
 

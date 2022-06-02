@@ -1,5 +1,5 @@
 <launch>
-  <arg name="data_dir" default="$(find perception)/data/objects/color_labels"/>
+  <arg name="data_dir" default="/home/capstone/data/objects/color_labels"/>
   <arg name="topic" default="/head_camera/depth_registered/points" />
   <param name="ec_cluster_tolerance" value="0.03" />
   <param name="ec_min_cluster_size" value="700" />
