@@ -11,7 +11,7 @@ from tf2_geometry_msgs import PoseStamped as PoseStampedTF2
 from std_msgs.msg import ColorRGBA
 from sensor_msgs.msg import JointState
 import tf
-from moveit_python import PlanningSceneInterface
+import numpy as np
 
 
 from robot_api import Arm, Gripper, ArmJoints
@@ -75,6 +75,7 @@ class GripperTeleop(object):
 
         self.__tf_listener = tf.TransformListener()
         self.__arm_joints_server = ArmJointsServer()
+        self.__tf_broadcaster = tf.TransformBroadcaster()
 
         rospy.Subscriber("/gripper_ik/go_to", PoseStamped, self.__handle_goto)
         rospy.Subscriber("/gripper_ik/grasp", PoseStamped, self.grasp_object)
@@ -242,7 +243,10 @@ class GripperTeleop(object):
 
         result = None
         result_score = 100000
+        result_distance_based = None
+        result_distance_based_score = 1e6
         result_pos_axis = None
+        result_distance_based_pos_axis = None
 
         PREGRASP_OFFSET = 0.17
         for (position_axis, orientation_axis) in [
@@ -251,11 +255,19 @@ class GripperTeleop(object):
             # ("y", "z"),
             # ("z", "y"),
         ]:
-            for orientation_val in [1.0]:
+            for orientation_val in [-1.0, 1.0]:
                 pregrasp_pose = copy.deepcopy(pose)
                 # Offset so that object lies in the gripper
                 setattr(pregrasp_pose.pose.position, position_axis, getattr(pregrasp_pose.pose.position, position_axis) - PREGRASP_OFFSET)
                 setattr(pregrasp_pose.pose.orientation, orientation_axis, orientation_val)
+
+                self.__tf_listener.waitForTransform("base_link", pregrasp_pose.header.frame_id, pregrasp_pose.header.stamp, rospy.Duration(100))
+                translation, _ = self.__tf_listener.lookupTransform("base_link", pregrasp_pose.header.frame_id, pregrasp_pose.header.stamp)
+                
+                if np.linalg.norm(translation) < result_distance_based_score:
+                    result_distance_based = pregrasp_pose
+                    result_distance_based_score = np.linalg.norm(translation)
+                    result_distance_based_pos_axis = position_axis
 
                 arm_joints = self._arm.compute_ik(pregrasp_pose)
                 if arm_joints is not None:
@@ -266,6 +278,10 @@ class GripperTeleop(object):
                         result = pregrasp_pose
                         result_score = cur_score
                         result_pos_axis = position_axis
+        
+        if result is None:
+            result = result_distance_based
+            result_pos_axis = result_distance_based_pos_axis
 
         return result, result_pos_axis
 
@@ -273,11 +289,22 @@ class GripperTeleop(object):
         # 0. Calculate pre-grasp pose
         object_pose = copy.deepcopy(object_pose)
 
+        cur_time = rospy.Time.now()
+        for duration in [-1, 0, 5]:
+            self.__tf_broadcaster.sendTransform(
+                translation=(object_pose.pose.position.x, object_pose.pose.position.y, object_pose.pose.position.z),
+                rotation=(object_pose.pose.orientation.x, object_pose.pose.orientation.y, object_pose.pose.orientation.z, object_pose.pose.orientation.w),
+                time=cur_time + rospy.Duration(duration),
+                child="grasp_object",
+                parent=object_pose.header.frame_id
+            )
+        # self.__tf_listener.waitForTransform("grasp_object", object_pose.header.frame_id, cur_time, rospy.Duration(100))
+        # object_pose = self.__tf_listener.transformPose("grasp_object", object_pose)
 
         grasp_pose, pos_axis = self.__get_best_grasp_pose(object_pose)
+        print(f"grasp pose: {grasp_pose}")
         if grasp_pose is None:
             return
-
 
         # 1. Open gripper
         self._gripper.open()
@@ -287,8 +314,14 @@ class GripperTeleop(object):
             pregrasp_pose.pose.position.x -= 0.15
         elif pos_axis == "z":
             pregrasp_pose.pose.position.z += 0.
+        if not self.__handle_goto(pregrasp_pose):
+            pregrasp_pose = copy.deepcopy(grasp_pose)
+            if pos_axis == "x":
+                pregrasp_pose.pose.position.x += 0.15
+            elif pos_axis == "z":
+                pregrasp_pose.pose.position.z += 0.
+        
 
-        self.__handle_goto(pregrasp_pose)
         self.__handle_goto(grasp_pose, use_raw_joints=True)
         self._gripper.close()
         self.__handle_goto()
