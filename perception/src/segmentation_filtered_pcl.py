@@ -41,6 +41,7 @@ class PCFilterSegmentation():
 
     def callback_pc(self, msg):
         msg: PointCloud2
+        # rospy.loginfo("In callback pc")
 
         with self.__pcl_lock:
             # Delete old key if applicable
@@ -59,6 +60,7 @@ class PCFilterSegmentation():
     def callback_idx(self, msg):
         self.__any_idx_msg_received = True
         msg: PointCloud2
+        # rospy.loginfo("In callback idx")
 
         with self.__idx_lock:
             # Delete old key if applicable
@@ -108,7 +110,8 @@ class PCFilterSegmentation():
 
             # Get a filter array; true if not detected as object. false otherwise
             bool_arr = np.ones(len(pc_array), dtype=bool)
-            bool_arr[idx_msg.indices] = False
+            indices = np.array(idx_msg.indices)
+            bool_arr[indices] = False
             # Filter pc_array
             pc_array = pc_array[bool_arr]
 

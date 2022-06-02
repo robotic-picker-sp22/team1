@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
   Crop(pcl_cloud, cropped_cloud);
 
   std::vector<perception::Object> objects;
-  std::vector<pcl::PointIndices::Ptr> object_indices;
+  std::vector<pcl::PointIndices> object_indices;
   perception::SegmentObjects(cropped_cloud, &objects, &object_indices);
   if (objects.size() != 1) {
     std::cerr << "Expected to see exactly one object, found " << objects.size()

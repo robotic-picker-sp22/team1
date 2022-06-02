@@ -21,7 +21,8 @@ class CommandPerceptionInterface:
         pose_stamped = PoseStamped()
         pose_stamped.header = marker.header
         pose_stamped.pose = marker.pose
-        self.__object_poses[marker.text] = pose_stamped
+        name = marker.text.split(" (", maxsplit=1)[0]
+        self.__object_poses[name] = pose_stamped
 
     def callback_list(self):
         if not self.__object_poses:
@@ -70,5 +71,18 @@ class CommandPerceptionInterface:
         self.spin()
 
 
+def wait_for_time():
+    """Wait for simulated time to begin.
+    """
+    while rospy.Time().now().to_sec() == 0:
+        pass
+
+
 def main():
-    pass
+    rospy.init_node('perception_interface')
+    wait_for_time()
+    CommandPerceptionInterface().run()
+
+
+if __name__ == '__main__':
+    main()

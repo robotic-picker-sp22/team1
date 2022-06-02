@@ -22,7 +22,7 @@ namespace perception
     // Args:
     //  cloud: The point cloud with the bin and the objects in it.
     //  objects: The output objects.
-    void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<Object> *objects, std::vector<pcl::PointIndices::Ptr> *indices);
+    void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<Object> *objects, std::vector<pcl::PointIndices> *indices);
     void Euclid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices);
     void RegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices);
     void ColorRegionGrowing(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, std::vector<pcl::PointIndices> *indices);

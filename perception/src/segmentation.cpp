@@ -45,11 +45,12 @@ namespace perception
         ros::param::param("show_below_confidence_flag", show_below_confidence_flag, true);
 
 
+        // ROS_WARN("IN Callback");
         // std::vector<pcl::PointIndices> object_indices;
         // SegmentBinObjects(cloud, &object_indices);
 
         std::vector<Object> objects;
-        std::vector<pcl::PointIndices::Ptr> object_indices;
+        std::vector<pcl::PointIndices> object_indices;
         SegmentObjects(cloud, &objects, &object_indices);
 
         for (size_t i = 0; i < objects.size(); ++i)
@@ -72,7 +73,8 @@ namespace perception
             visualization_msgs::Marker object_marker;
             object_marker.ns = "objects";
             object_marker.id = i;
-            object_marker.header.frame_id = "base_link";
+            object_marker.header.frame_id = cloud->header.frame_id;
+            // object_marker.header.frame_id = "base_link";
             object_marker.type = visualization_msgs::Marker::CUBE;
             object_marker.pose = object.pose;
             object_marker.scale = object.dimensions;
@@ -95,7 +97,8 @@ namespace perception
             visualization_msgs::Marker name_marker;
             name_marker.ns = "recognition";
             name_marker.id = i;
-            name_marker.header.frame_id = "base_link";
+            // name_marker.header.frame_id = "base_link";
+            name_marker.header.frame_id = cloud->header.frame_id;
             name_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
             name_marker.pose.position = object.pose.position;
             name_marker.pose.position.z += 0.1;
@@ -115,14 +118,17 @@ namespace perception
             points_pub_.publish(segmented_msg);
         }
 
+        // ROS_WARN("IN Callback post loop");
+
         // Publish the indices of the objects.
         std::vector<unsigned long> all_indices;
         for (size_t i = 0; i < object_indices.size(); i++)
         {
-            pcl::Indices cur_indices = object_indices[i]->indices;
+            pcl::Indices cur_indices = object_indices[i].indices;
             std::copy(cur_indices.begin(), cur_indices.end(), std::back_inserter(all_indices));
         }
 
+        // ROS_WARN("IN Callback publishing");
         perception_msgs::PCLIndices indices_msg = perception_msgs::PCLIndices();
         indices_msg.header = msg.header;
         indices_msg.indices = all_indices;
@@ -173,19 +179,19 @@ namespace perception
     //  cloud: The point cloud with the bin and the objects in it.
     //  objects: The output objects.
     void SegmentObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                        std::vector<Object> *objects, std::vector<pcl::PointIndices::Ptr> *indices)
+                        std::vector<Object> *objects, std::vector<pcl::PointIndices> *indices)
     {
         std::vector<pcl::PointIndices> object_indices;
         SegmentBinObjects(cloud, &object_indices);
         for (size_t i = 0; i < object_indices.size(); ++i)
         {
             // Reify indices into a point cloud of the object.
-            pcl::PointIndices::Ptr indices(new pcl::PointIndices);
-            *indices = object_indices[i];
+            pcl::PointIndices::Ptr cur_indices(new pcl::PointIndices);
+            *cur_indices = object_indices[i];
             PointCloudC::Ptr object_cloud(new PointCloudC());
             pcl::ExtractIndices<PointC> extract;
             extract.setInputCloud(cloud);
-            extract.setIndices(indices);
+            extract.setIndices(cur_indices);
             extract.filter(*object_cloud);
 
             // Create an object from the object cloud.
@@ -195,6 +201,7 @@ namespace perception
 
             objects->push_back(object);
         }
+        *indices = object_indices;
     }
 
     void Euclid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,

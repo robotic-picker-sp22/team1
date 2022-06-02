@@ -11,6 +11,12 @@
   <param name="crop_min_x" value="0.971199368312035" />
   <param name="crop_min_y" value="-0.785684597529011" />
   <param name="crop_min_z" value="-0.4937946663962469" /> -->
+  <param name="crop_max_x" value="0.5" />
+  <param name="crop_max_y" value="0.5" />
+  <param name="crop_max_z" value="2.0" />
+  <param name="crop_min_x" value="-0.5" />
+  <param name="crop_min_y" value="-0.5" />
+  <param name="crop_min_z" value="0.7" />
   <param name="reg_curvature_threshold" value="1" />
   <param name="reg_distance_threshold" value="0.5" />
   <param name="reg_k_search" value="30" />
@@ -27,6 +33,6 @@
     <remap from="cloud_in" to="$(arg topic)" />
   </node>
   <node pkg="perception" type="segmentation_filtered_pcl.py" name="segmentation_filtered_pcl" output="screen">
-    <param name="input_pc_topic" value="$(arg topic)" />
+    <param name="input_pc_topic" value="/cropped_cloud" />
   </node>
 </launch>
