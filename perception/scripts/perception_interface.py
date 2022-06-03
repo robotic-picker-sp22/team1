@@ -2,6 +2,7 @@ import textwrap
 import rospy
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import PoseStamped
+from visualization_msgs.msg import InteractiveMarkerFeedback
 
 
 class CommandPerceptionInterface:
@@ -11,7 +12,8 @@ class CommandPerceptionInterface:
             "goto": self.callback_goto,
             "help": self.callback_help,
         }
-        rospy.Subscriber("/segment_marker", Marker, self.rospy_callback_marker)
+        # rospy.Subscriber("/segment_marker", Marker, self.rospy_callback_marker)
+        rospy.Subscriber("/auto_pick_im_server/feedback", InteractiveMarkerFeedback, self.rospy_callback_interactive_marker_feedback)
 
         self.__object_poses = {}
         self.__move_to_publisher = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
@@ -23,6 +25,14 @@ class CommandPerceptionInterface:
         pose_stamped.pose = marker.pose
         name = marker.text.split(" (", maxsplit=1)[0]
         self.__object_poses[name] = pose_stamped
+
+    def rospy_callback_interactive_marker_feedback(self, feedback):
+        if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
+            pose_stamped = PoseStamped()
+            pose_stamped.header = feedback.header
+            pose_stamped.pose = feedback.pose
+            name = "spoof"
+            self.__object_poses[name] = pose_stamped
 
     def callback_list(self):
         if not self.__object_poses:

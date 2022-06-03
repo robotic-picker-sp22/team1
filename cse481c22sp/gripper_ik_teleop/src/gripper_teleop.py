@@ -2,13 +2,14 @@
 import copy
 import enum
 from multiprocessing import Lock
+from turtle import position
 import rospy
 from interactive_markers.interactive_marker_server import InteractiveMarkerServer
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, InteractiveMarkerFeedback
 from visualization_msgs.msg import Marker, MenuEntry
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion
 from tf2_geometry_msgs import PoseStamped as PoseStampedTF2
-from std_msgs.msg import ColorRGBA
+from std_msgs.msg import ColorRGBA, Header
 from sensor_msgs.msg import JointState
 import tf
 import numpy as np
@@ -62,6 +63,46 @@ class GripperTeleop(object):
     # Techincally the TF between fingers is 0.065, but value below seems to better reflect open state
     # TODO: We can just subscribe to current TF and use that? It will change if gripper is activated
     OFFSET_FINGERS_Y = 0.0535
+
+    # pos: [-0.3445654380005251, -0.39639268601404537, -0.49464442102902517]
+    # quat: [-0.04738921664517528, 0.009615731510929962, 0.3917367488991433, 0.9188058115919788]
+
+    BIN_POSE = PoseStamped(
+        header=Header(
+            frame_id="base_link"
+        ),
+        pose=Pose(
+            position=Point(
+                # x=-0.20031924848860075,
+                x=-0.3445654380005251,
+                # y=0.5402109303523506,
+                y=-0.39639268601404537,
+                # z=0.30157177314733363
+                z=-0.49464442102902517
+            ),
+            orientation=Quaternion(
+                x=-0.04738921664517528,
+                y=0.009615731510929962,
+                z=0.3917367488991433,
+                w=0.9188058115919788
+                # x=0.8314067610858493,
+                # y=-0.5512791424967332,
+                # z=-0.003990053325804426,
+                # w=0.06955705674669327,
+            )
+        )
+    )
+
+    BIN_POSE_JOINTS = ArmJoints() 
+    BIN_POSE_JOINTS.from_list([
+        0.54157,
+        0.52458,
+        2.44313,
+        -0.43996,
+        -0.43708,
+        -1.62401,
+        -0.68094,
+    ])
 
     def __init__(self, arm, gripper, im_server):
         self._arm = arm
@@ -322,9 +363,16 @@ class GripperTeleop(object):
                 pregrasp_pose.pose.position.z += 0.
         
 
+        # self.__handle_goto(pregrasp_pose)
         self.__handle_goto(grasp_pose, use_raw_joints=True)
         self._gripper.close()
-        self.__handle_goto()
+        self.__handle_goto(pregrasp_pose, use_raw_joints=True)
+        self._arm.move_to_joints(self.BIN_POSE_JOINTS)
+
+        # bin_pose = copy.deepcopy(self.BIN_POSE)
+        # bin_pose.header.stamp = rospy.Time.now()
+        # self.__handle_goto(bin_pose)
+        self._gripper.open()
 
 
 class AutoPickTeleop(object):
